@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Módulo POS & Facturación - El Gustazo</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <!-- Encabezado Institucional Oficial -->
+    <header class="main-header">
+        <a href="pos.html" class="logo-area">
+            <img src="img/logo.jpg" alt="Logo El Gustazo" class="brand-logo-img">
+            <div class="logo-title-wrap">
+                <h1>EL GUSTAZO</h1>
+                <p>Sierra Maestra, Managua - POS Táctil</p>
+            </div>
+        </a>
+
+        <nav class="nav-menu">
+            <a href="pos.html" class="nav-link active">🛒 POS & Ventas</a>
+            <a href="inventario.html" class="nav-link">📦 Inventario & BOM</a>
+            <a href="clientes.html" class="nav-link">👥 Clientes</a>
+            <a href="caja.html" class="nav-link">💵 Caja Chica</a>
+            <a href="admin.html" class="nav-link admin-only">⚙️ Admin & Reportes</a>
+        </nav>
+
+        <div class="user-status">
+            <button id="btn-header-alert" class="header-alert-btn">⚠️ Insumos Críticos</button>
+            <span id="pos-shift-badge" class="status-badge warning">Verificando Turno...</span>
+            <div class="user-badge">
+                <span id="header-user-name">Cajero</span>
+                <span id="header-user-role" class="role-pill">Cajero</span>
+            </div>
+            <button onclick="cerrarSesion()" class="btn-logout">Salir</button>
+        </div>
+    </header>
+
+    <!-- Contenedor Principal POS Táctil -->
+    <main class="dashboard-container">
+        <!-- Panel Izquierdo: Catálogo y Selección Dinámica de Platillos y Combos (RF-02) -->
+        <section class="catalog-section">
+            <div class="panel-header">
+                <h2>🍔 Menú de Platillos y Combos</h2>
+            </div>
+
+            <div class="catalog-toolbar">
+                <div class="search-input-wrap">
+                    <span class="search-icon">🔍</span>
+                    <input type="text" id="txt-buscar-producto" placeholder="Buscar por nombre o ingrediente..." oninput="buscarPlatilloEnVivo()">
+                </div>
+
+                <div class="categories-bar">
+                    <button class="cat-btn active" data-cat="todos" onclick="filtrarPorCategoria('todos', this)">Todos</button>
+                    <button class="cat-btn" data-cat="1" onclick="filtrarPorCategoria('1', this)">Hamburguesas</button>
+                    <button class="cat-btn" data-cat="2" onclick="filtrarPorCategoria('2', this)">Papas y Extras</button>
+                    <button class="cat-btn" data-cat="3" onclick="filtrarPorCategoria('3', this)">Pollo Crispy</button>
+                    <button class="cat-btn" data-cat="4" onclick="filtrarPorCategoria('4', this)">Bebidas</button>
+                    <button class="cat-btn" data-cat="5" onclick="filtrarPorCategoria('5', this)">Combos Especiales</button>
+                </div>
+            </div>
+
+            <div class="product-grid-wrap">
+                <div id="grid-productos" class="product-grid">
+                    <!-- Cargado dinámicamente por app.js -->
+                </div>
+            </div>
+        </section>
+
+        <!-- Panel Derecho: Comanda, Totales, Métodos de Pago y Facturación (RF-01, RF-03 a RF-08) -->
+        <section class="billing-section">
+            <div class="panel-header">
+                <h2>🧾 Comanda Actual</h2>
+                <button class="btn-small" onclick="vaciarCarrito()" style="background:#EF4444;" title="Limpiar comanda">Limpiar</button>
+            </div>
+
+            <!-- Selector de Clientes (RF-13, RF-14) -->
+            <div class="customer-select-bar">
+                <select id="select-cliente-pos">
+                    <option value="1">Consumidor Final (0000-0000)</option>
+                </select>
+                <button type="button" class="btn-small" onclick="abrirModalNuevoCliente()">+ Cliente</button>
+            </div>
+
+            <!-- Lista de Ítems en Comanda -->
+            <div class="cart-list-wrap">
+                <table class="cart-table">
+                    <thead>
+                        <tr>
+                            <th>Platillo / Combo</th>
+                            <th>Cant</th>
+                            <th>Importe</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="cart-items-body">
+                        <!-- Ítems del carrito renderizados aquí -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Totales, Pagos Multicanal y Cobro -->
+            <div class="billing-footer">
+                <div class="totals-summary">
+                    <div class="row">
+                        <span>Subtotal:</span>
+                        <strong id="val-subtotal">C$ 0.00</strong>
+                    </div>
+                    <div class="row">
+                        <span>IVA Aplicable (15%):</span>
+                        <strong id="val-impuesto">C$ 0.00</strong>
+                    </div>
+                    <div class="row total-row">
+                        <span>TOTAL A PAGAR:</span>
+                        <strong id="val-total">C$ 0.00</strong>
+                    </div>
+                </div>
+
+                <!-- Métodos de Pago Permitidos (RF-06: Solo Efectivo y Transferencia) -->
+                <div>
+                    <span class="payment-selector-title">Modalidad de Pago:</span>
+                    <div class="payment-toggle-group" style="margin-top: 5px;">
+                        <button type="button" id="btn-metodo-efectivo" class="pay-toggle-btn active" onclick="seleccionarMetodoPago(1)">
+                            💵 Efectivo
+                        </button>
+                        <button type="button" id="btn-metodo-transferencia" class="pay-toggle-btn" onclick="seleccionarMetodoPago(2)">
+                            📲 Transferencia
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Modalidad 1: Efectivo con Cálculo de Vuelto (RF-03) -->
+                <div id="box-pago-efectivo" class="cash-details-box">
+                    <div class="input-row">
+                        <label for="txt-monto-recibido">Dinero Recibido (C$):</label>
+                        <input type="number" id="txt-monto-recibido" placeholder="0.00" step="1" oninput="calcularVueltoEnVivo()">
+                    </div>
+                    <div class="change-display">
+                        <span>Vuelto Exacto:</span>
+                        <strong id="val-vuelto">C$ 0.00</strong>
+                    </div>
+                </div>
+
+                <!-- Modalidad 2: Transferencia Bancaria con Selección de Banco y Referencia (RF-07, RF-08) -->
+                <div id="box-pago-transferencia" class="transfer-details-box">
+                    <label style="font-size:0.75rem; font-weight:700; color:#475569;">Seleccione Banco de Destino:</label>
+                    <div class="bank-grid">
+                        <div class="bank-card-btn active" onclick="seleccionarBanco('BAC', this)">
+                            <span class="bank-badge-bac" style="font-size:1.1rem;">🦁</span>
+                            <span class="bank-name bank-badge-bac">BAC</span>
+                        </div>
+                        <div class="bank-card-btn" onclick="seleccionarBanco('Banpro', this)">
+                            <span class="bank-badge-banpro" style="font-size:1.1rem;">🏛️</span>
+                            <span class="bank-name bank-badge-banpro">Banpro</span>
+                        </div>
+                        <div class="bank-card-btn" onclick="seleccionarBanco('Lafise', this)">
+                            <span class="bank-badge-lafise" style="font-size:1.1rem;">🏢</span>
+                            <span class="bank-name bank-badge-lafise">Lafise</span>
+                        </div>
+                        <div class="bank-card-btn" onclick="seleccionarBanco('BDF', this)">
+                            <span class="bank-badge-bdf" style="font-size:1.1rem;">🔷</span>
+                            <span class="bank-name bank-badge-bdf">BDF</span>
+                        </div>
+                        <div class="bank-card-btn" onclick="seleccionarBanco('Ficohsa', this)">
+                            <span class="bank-badge-ficohsa" style="font-size:1.1rem;">🌐</span>
+                            <span class="bank-name bank-badge-ficohsa">Ficohsa</span>
+                        </div>
+                    </div>
+
+                    <div class="ref-input-wrap">
+                        <label for="txt-referencia-transferencia">Código de Confirmación / Referencia (*):</label>
+                        <input type="text" id="txt-referencia-transferencia" placeholder="Ej: #TRF-982341">
+                    </div>
+                </div>
+
+                <button type="button" class="btn-charge" onclick="procesarFacturacion()">
+                    ⚡ Cobrar e Imprimir Ticket
+                </button>
+            </div>
+        </section>
+    </main>
+
+    <!-- Modal 1: Apertura Obligatoria de Caja Chica (RF-16) -->
+    <div id="modal-apertura-caja" class="modal-backdrop">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h3>💰 Apertura de Caja Chica Requerida</h3>
+            </div>
+            <form onsubmit="procesarAperturaCajaDesdePOS(event)">
+                <div class="modal-body">
+                    <p style="font-size: 0.9rem; color: #475569;">
+                        Para iniciar las ventas del turno debe registrar el <strong>monto o fondo inicial en efectivo</strong> asignado a la caja física.
+                    </p>
+                    <div class="form-group">
+                        <label for="txt-fondo-inicial">Fondo Inicial en Efectivo (C$):</label>
+                        <input type="number" id="txt-fondo-inicial" required placeholder="Ej: 1000.00" min="0" step="10" autofocus>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn-charge" style="padding: 10px 20px;">
+                        Abrir Turno de Ventas
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal 2: Emisión de Comprobantes ESC/POS y WhatsApp (RF-04, RF-05) -->
+    <div id="modal-comprobante-exito" class="modal-backdrop">
+        <div class="modal-box" style="max-width: 580px;">
+            <div class="modal-header">
+                <h3>🎉 ¡Venta Registrada Exitosamente!</h3>
+                <button type="button" class="modal-close-btn" onclick="cerrarModalComprobante()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p style="font-size: 0.85rem; color: #16A34A; font-weight: 700;">
+                    ✓ Descuento automatizado de inventario por receta (BOM) aplicado correctamente.
+                </p>
+
+                <!-- Vista Previa Ticket Térmico ESC/POS -->
+                <div>
+                    <label style="font-size: 0.8rem; font-weight: 800; color:#334155; display:block; margin-bottom: 4px;">
+                        Vista Previa Ticket Térmico (ESC/POS 80mm/58mm):
+                    </label>
+                    <div id="preview-ticket-escpos" class="thermal-ticket-preview"></div>
+                </div>
+            </div>
+            <div class="modal-footer" style="flex-wrap: wrap; justify-content: space-between;">
+                <div style="display: flex; gap: 8px;">
+                    <button type="button" class="btn-thermal" onclick="imprimirTicketTermico()">
+                        🖨️ Imprimir Ticket Físico
+                    </button>
+                    <button type="button" class="btn-small" style="background:#475569;" onclick="copiarResumenWhatsApp()">
+                        📋 Copiar Texto
+                    </button>
+                </div>
+                <div style="display: flex; gap: 8px;">
+                    <a id="btn-enviar-whatsapp" class="btn-whatsapp" href="#" target="_blank">
+                        📱 Enviar a WhatsApp
+                    </a>
+                    <button type="button" class="btn-small" style="background:#94A3B8;" onclick="cerrarModalComprobante()">
+                        Cerrar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal 3: Registro Rápido de Nuevo Cliente (RF-13, RF-14) -->
+    <div id="modal-nuevo-cliente" class="modal-backdrop">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h3>👥 Registrar Nuevo Cliente</h3>
+                <button type="button" class="modal-close-btn" onclick="cerrarModalNuevoCliente()">&times;</button>
+            </div>
+            <form onsubmit="guardarClienteDesdePOS(event)">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="txt-nc-nombre">Nombre Completo (*):</label>
+                        <input type="text" id="txt-nc-nombre" required placeholder="Ej: Roberto Gómez">
+                    </div>
+                    <div class="form-group">
+                        <label for="txt-nc-telefono">Teléfono / WhatsApp (*):</label>
+                        <input type="text" id="txt-nc-telefono" required placeholder="Ej: 8899-0011">
+                    </div>
+                    <div class="form-group">
+                        <label for="txt-nc-direccion">Dirección:</label>
+                        <input type="text" id="txt-nc-direccion" placeholder="Ej: Sierra Maestra, del parque 1c al lago">
+                    </div>
+                    <div class="form-group">
+                        <label for="txt-nc-categoria">Categoría:</label>
+                        <select id="txt-nc-categoria">
+                            <option value="Ocasional">Ocasional</option>
+                            <option value="Frecuente">Frecuente</option>
+                            <option value="VIP">VIP</option>
+                            <option value="Corporativo">Corporativo</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-small" style="background:#94A3B8;" onclick="cerrarModalNuevoCliente()">Cancelar</button>
+                    <button type="submit" class="btn-charge" style="padding: 8px 16px;">Guardar y Seleccionar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="js/app.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            inicializarPOS();
+        });
+    </script>
+</body>
+</html>

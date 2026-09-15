@@ -1,0 +1,13 @@
+{
+  "name": "el-gustazo-pos",
+  "version": "1.0.0",
+  "description": "Sistema POS y Control de Inventarios Offline para El Gustazo",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "sqlite3": "^5.1.7"
+  }
+}

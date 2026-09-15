@@ -1,0 +1,1250 @@
+/* =========================================================
+   EL BUEN GUSTO - EL GUSTAZO POS & INVENTARIO
+   Paleta Institucional Oficial del Logo (Tema Claro)
+   Sierra Maestra, Managua - Sistema 100% Offline
+   ========================================================= */
+
+:root {
+    /* Paleta Institucional */
+    --primary-orange: #EA580C;      /* Naranja institucional enérgico */
+    --primary-hover: #C2410C;
+    --amber-gold: #F59E0B;          /* Dorado ámbar del logo */
+    --amber-light: #FEF3C7;         /* Fondo suave ámbar */
+    --warm-bg: #F8FAFC;             /* Fondo claro principal */
+    --surface-card: #FFFFFF;        /* Superficie de tarjetas */
+    --surface-alt: #FFFBEB;         /* Superficie cálida */
+    --border-color: #E2E8F0;
+    --border-orange: #FDBA74;
+
+    /* Tipografía y Contraste */
+    --text-primary: #0F172A;        /* Negro carbón de alta legibilidad */
+    --text-secondary: #475569;
+    --text-muted: #94A3B8;
+    --text-light: #FFFFFF;
+
+    /* Semáforo & Estados */
+    --success: #16A34A;
+    --success-bg: #DCFCE7;
+    --danger: #DC2626;
+    --danger-bg: #FEE2E2;
+    --warning: #D97706;
+    --warning-bg: #FEF3C7;
+    --info: #0284C7;
+    --info-bg: #E0F2FE;
+
+    /* Bancos de Nicaragua */
+    --banco-bac: #E30613;
+    --banco-banpro: #00843D;
+    --banco-lafise: #006837;
+    --banco-bdf: #003366;
+    --banco-ficohsa: #002D62;
+
+    /* Sombras y Bordes */
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 14px;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+}
+
+body {
+    background-color: var(--warm-bg);
+    color: var(--text-primary);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* =========================================================
+   HEADER INSTITUCIONAL Y NAVEGACIÓN
+   ========================================================= */
+.main-header {
+    background: linear-gradient(135deg, #1E1E1E 0%, #2A1810 100%);
+    border-bottom: 3px solid var(--amber-gold);
+    color: var(--text-light);
+    padding: 10px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: var(--shadow-md);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.logo-area {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    text-decoration: none;
+    color: inherit;
+}
+
+.brand-logo-img {
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    border: 2px solid var(--amber-gold);
+    object-fit: cover;
+    background: #000;
+}
+
+.logo-title-wrap h1 {
+    font-size: 1.3rem;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    color: var(--amber-gold);
+    line-height: 1.1;
+}
+
+.logo-title-wrap p {
+    font-size: 0.75rem;
+    color: #CBD5E1;
+    font-weight: 500;
+}
+
+.nav-menu {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.nav-link {
+    color: #E2E8F0;
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-weight: 600;
+    padding: 8px 14px;
+    border-radius: var(--radius-sm);
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.nav-link:hover {
+    background: rgba(245, 158, 11, 0.2);
+    color: var(--amber-gold);
+}
+
+.nav-link.active {
+    background: var(--primary-orange);
+    color: #FFFFFF;
+    box-shadow: 0 2px 4px rgba(234, 88, 12, 0.4);
+}
+
+.user-status {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.user-badge {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.role-pill {
+    background: var(--amber-gold);
+    color: #000;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+}
+
+.btn-logout {
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: #FFFFFF;
+    padding: 6px 12px;
+    border-radius: var(--radius-sm);
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-decoration: none;
+}
+
+.btn-logout:hover {
+    background: rgba(220, 38, 38, 0.2);
+    border-color: #EF4444;
+    color: #FCA5A5;
+}
+
+/* Alerta de Stock en Header */
+.header-alert-btn {
+    background: var(--danger-bg);
+    color: var(--danger);
+    border: 1px solid var(--danger);
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: none;
+    align-items: center;
+    gap: 6px;
+    animation: pulseAlert 2s infinite;
+}
+
+@keyframes pulseAlert {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
+/* =========================================================
+   CONTENEDOR PRINCIPAL Y PANELES POS
+   ========================================================= */
+.dashboard-container {
+    display: grid;
+    grid-template-columns: 1fr 440px;
+    gap: 20px;
+    padding: 20px;
+    flex: 1;
+    max-height: calc(100vh - 70px);
+    overflow: hidden;
+}
+
+.catalog-section, .billing-section {
+    background: var(--surface-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+/* Encabezados de paneles */
+.panel-header {
+    padding: 14px 20px;
+    background: #FFFBF5;
+    border-bottom: 2px solid var(--amber-light);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.panel-header h2 {
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: var(--primary-orange);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Barra de categorías y búsqueda */
+.catalog-toolbar {
+    padding: 12px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    border-bottom: 1px solid var(--border-color);
+    background: #FAFAFA;
+}
+
+.search-input-wrap {
+    position: relative;
+    width: 100%;
+}
+
+.search-input-wrap input {
+    width: 100%;
+    padding: 10px 14px 10px 38px;
+    border: 1.5px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    font-size: 0.95rem;
+    outline: none;
+    transition: border 0.2s;
+}
+
+.search-input-wrap input:focus {
+    border-color: var(--primary-orange);
+    box-shadow: 0 0 0 3px rgba(234, 88, 12, 0.15);
+}
+
+.search-icon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted);
+    font-size: 1rem;
+}
+
+.categories-bar {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+}
+
+.cat-btn {
+    background: #FFFFFF;
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.2s ease;
+}
+
+.cat-btn:hover {
+    border-color: var(--primary-orange);
+    color: var(--primary-orange);
+}
+
+.cat-btn.active {
+    background: var(--primary-orange);
+    border-color: var(--primary-orange);
+    color: #FFFFFF;
+}
+
+/* Grilla de productos */
+.product-grid-wrap {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px 20px;
+}
+
+.product-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+    gap: 14px;
+}
+
+.product-card {
+    background: #FFFFFF;
+    border: 1.5px solid #F1F5F9;
+    border-radius: var(--radius-md);
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.03);
+    position: relative;
+    user-select: none;
+}
+
+.product-card:hover {
+    transform: translateY(-3px);
+    border-color: var(--amber-gold);
+    box-shadow: 0 6px 12px rgba(245, 158, 11, 0.15);
+}
+
+.product-card:active {
+    transform: scale(0.98);
+}
+
+.product-card.is-combo {
+    border-left: 4px solid var(--amber-gold);
+    background: #FFFDF9;
+}
+
+.product-badge-combo {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: var(--amber-light);
+    color: #B45309;
+    font-size: 0.65rem;
+    font-weight: 800;
+    padding: 2px 6px;
+    border-radius: 4px;
+    border: 1px solid var(--amber-gold);
+}
+
+.product-card h3 {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 6px;
+    line-height: 1.25;
+}
+
+.product-card p.desc {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    margin-bottom: 10px;
+    line-height: 1.3;
+    display: -webkit-box;
+    display: box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    box-orient: vertical;
+    overflow: hidden;
+}
+
+.product-card .price-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: auto;
+}
+
+.product-card .price {
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: var(--primary-orange);
+}
+
+.product-card .add-btn {
+    background: var(--amber-light);
+    color: var(--primary-orange);
+    border: 1px solid var(--amber-gold);
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 1.1rem;
+    transition: all 0.15s;
+}
+
+.product-card:hover .add-btn {
+    background: var(--primary-orange);
+    color: #FFFFFF;
+}
+
+/* =========================================================
+   PANEL DE FACTURACIÓN Y COMANDA (LADO DERECHO)
+   ========================================================= */
+.billing-section {
+    background: #FFFFFF;
+}
+
+/* Selector de Cliente */
+.customer-select-bar {
+    padding: 12px 16px;
+    background: #F8FAFC;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.customer-select-bar select {
+    flex: 1;
+    padding: 8px 10px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    font-size: 0.85rem;
+    outline: none;
+    background: #FFFFFF;
+}
+
+.btn-small {
+    padding: 8px 12px;
+    background: var(--primary-orange);
+    color: #FFFFFF;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+/* Tabla del Carrito */
+.cart-list-wrap {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px 16px;
+    min-height: 180px;
+}
+
+.cart-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.cart-table th {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    padding: 8px 4px;
+    text-align: left;
+    border-bottom: 1.5px solid var(--border-color);
+}
+
+.cart-table td {
+    padding: 10px 4px;
+    border-bottom: 1px solid #F1F5F9;
+    font-size: 0.88rem;
+    vertical-align: middle;
+}
+
+.cart-item-title {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.cart-qty-ctrl {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.qty-btn {
+    background: #F1F5F9;
+    border: 1px solid #CBD5E1;
+    width: 24px;
+    height: 24px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    cursor: pointer;
+    color: var(--text-primary);
+    transition: all 0.1s;
+}
+
+.qty-btn:hover {
+    background: var(--primary-orange);
+    color: #FFFFFF;
+    border-color: var(--primary-orange);
+}
+
+.qty-display {
+    font-weight: 700;
+    min-width: 18px;
+    text-align: center;
+}
+
+.cart-del-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 1rem;
+    transition: color 0.2s;
+}
+
+.cart-del-btn:hover {
+    color: var(--danger);
+}
+
+/* Totales Financieros */
+.billing-footer {
+    padding: 14px 16px;
+    background: #FFFDF9;
+    border-top: 2px solid var(--border-orange);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.totals-summary {
+    background: #FFFFFF;
+    border: 1px solid var(--border-orange);
+    border-radius: var(--radius-sm);
+    padding: 10px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.totals-summary .row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+}
+
+.totals-summary .row.total-row {
+    border-top: 1.5px dashed var(--border-color);
+    padding-top: 6px;
+    margin-top: 2px;
+    font-size: 1.25rem;
+    font-weight: 900;
+    color: var(--primary-orange);
+}
+
+/* Selector de Métodos de Pago */
+.payment-selector-title {
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    letter-spacing: 0.5px;
+}
+
+.payment-toggle-group {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+
+.pay-toggle-btn {
+    padding: 10px;
+    background: #F8FAFC;
+    border: 2px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--text-secondary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: all 0.2s;
+}
+
+.pay-toggle-btn:hover {
+    border-color: var(--amber-gold);
+}
+
+.pay-toggle-btn.active {
+    border-color: var(--primary-orange);
+    background: #FFF7ED;
+    color: var(--primary-orange);
+}
+
+/* Sección Efectivo */
+.cash-details-box {
+    background: #F8FAFC;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.input-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+}
+
+.input-row label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.input-row input {
+    width: 140px;
+    padding: 8px 10px;
+    border: 1.5px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    font-size: 1rem;
+    font-weight: 700;
+    text-align: right;
+    outline: none;
+}
+
+.input-row input:focus {
+    border-color: var(--primary-orange);
+}
+
+.change-display {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--success-bg);
+    border: 1px solid #86EFAC;
+    padding: 6px 10px;
+    border-radius: var(--radius-sm);
+}
+
+.change-display span {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--success);
+}
+
+.change-display strong {
+    font-size: 1.1rem;
+    color: var(--success);
+}
+
+/* Sección Transferencia Bancaria (Logos oficiales BAC, Banpro, Lafise, BDF, Ficohsa) */
+.transfer-details-box {
+    display: none;
+    background: #F8FAFC;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    padding: 10px;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.bank-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 6px;
+}
+
+.bank-card-btn {
+    background: #FFFFFF;
+    border: 2px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    padding: 6px 2px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+}
+
+.bank-card-btn:hover {
+    border-color: var(--amber-gold);
+    transform: translateY(-1px);
+}
+
+.bank-card-btn.active {
+    border-color: var(--primary-orange);
+    background: #FFF7ED;
+    box-shadow: 0 0 0 2px rgba(234, 88, 12, 0.2);
+}
+
+.bank-badge-bac { color: var(--banco-bac); font-weight: 900; }
+.bank-badge-banpro { color: var(--banco-banpro); font-weight: 900; }
+.bank-badge-lafise { color: var(--banco-lafise); font-weight: 900; }
+.bank-badge-bdf { color: var(--banco-bdf); font-weight: 900; }
+.bank-badge-ficohsa { color: var(--banco-ficohsa); font-weight: 900; }
+
+.bank-name {
+    font-size: 0.7rem;
+    font-weight: 800;
+}
+
+.ref-input-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.ref-input-wrap label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--text-secondary);
+}
+
+.ref-input-wrap input {
+    padding: 8px 10px;
+    border: 1.5px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    font-size: 0.9rem;
+    outline: none;
+}
+
+.ref-input-wrap input:focus {
+    border-color: var(--primary-orange);
+}
+
+/* Botón de Procesar Venta */
+.btn-charge {
+    background: linear-gradient(135deg, var(--primary-orange) 0%, var(--primary-hover) 100%);
+    color: #FFFFFF;
+    border: none;
+    padding: 14px;
+    border-radius: var(--radius-sm);
+    font-size: 1.05rem;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    box-shadow: 0 4px 6px rgba(234, 88, 12, 0.3);
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.btn-charge:hover {
+    background: linear-gradient(135deg, #F97316 0%, var(--primary-orange) 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 12px rgba(234, 88, 12, 0.4);
+}
+
+.btn-charge:active {
+    transform: scale(0.99);
+}
+
+/* =========================================================
+   MÓDULOS DE ADMINISTRACIÓN, INVENTARIO, CLIENTES Y CAJA
+   ========================================================= */
+.module-container {
+    padding: 24px;
+    max-width: 1280px;
+    margin: 0 auto;
+    width: 100%;
+    flex: 1;
+}
+
+.module-header-box {
+    background: #FFFFFF;
+    border: 1px solid var(--border-color);
+    border-left: 5px solid var(--primary-orange);
+    border-radius: var(--radius-md);
+    padding: 16px 20px;
+    margin-bottom: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: var(--shadow-sm);
+}
+
+.module-header-box h2 {
+    font-size: 1.3rem;
+    font-weight: 800;
+    color: var(--text-primary);
+}
+
+.module-header-box p {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin-top: 2px;
+}
+
+/* Tarjetas de Métricas (KPIs) */
+.kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.kpi-card {
+    background: #FFFFFF;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 16px;
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    position: relative;
+    overflow: hidden;
+}
+
+.kpi-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    background: var(--amber-gold);
+}
+
+.kpi-card.orange::before { background: var(--primary-orange); }
+.kpi-card.green::before { background: var(--success); }
+.kpi-card.blue::before { background: var(--info); }
+.kpi-card.red::before { background: var(--danger); }
+
+.kpi-label {
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+}
+
+.kpi-value {
+    font-size: 1.6rem;
+    font-weight: 900;
+    color: var(--text-primary);
+}
+
+.kpi-sub {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+/* Pestañas de Navegación Interna */
+.tabs-container {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 18px;
+    border-bottom: 2px solid var(--border-color);
+    padding-bottom: 2px;
+}
+
+.tab-btn {
+    background: transparent;
+    border: none;
+    padding: 10px 18px;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--text-secondary);
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    margin-bottom: -2px;
+    transition: all 0.2s;
+}
+
+.tab-btn:hover {
+    color: var(--primary-orange);
+}
+
+.tab-btn.active {
+    color: var(--primary-orange);
+    border-bottom-color: var(--primary-orange);
+}
+
+/* Tablas Modernas */
+.table-card {
+    background: #FFFFFF;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+    margin-bottom: 24px;
+}
+
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+}
+
+.data-table th {
+    background: #F8FAFC;
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    padding: 12px 16px;
+    border-bottom: 1.5px solid var(--border-color);
+}
+
+.data-table td {
+    padding: 14px 16px;
+    border-bottom: 1px solid #F1F5F9;
+    font-size: 0.9rem;
+    color: var(--text-primary);
+    vertical-align: middle;
+}
+
+.data-table tr:hover {
+    background: #FFFDF9;
+}
+
+/* Badges de Estado */
+.status-badge {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
+.status-badge.success { background: var(--success-bg); color: var(--success); }
+.status-badge.danger { background: var(--danger-bg); color: var(--danger); }
+.status-badge.warning { background: var(--warning-bg); color: var(--warning); }
+.status-badge.info { background: var(--info-bg); color: var(--info); }
+
+/* =========================================================
+   MODALES (Ticket ESC/POS, WhatsApp, Caja, Nuevo Cliente)
+   ========================================================= */
+.modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(15, 23, 42, 0.6);
+    backdrop-filter: blur(2px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 20px;
+}
+
+.modal-backdrop.open {
+    display: flex;
+}
+
+.modal-box {
+    background: #FFFFFF;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    width: 100%;
+    max-width: 520px;
+    overflow: hidden;
+    animation: modalSlideUp 0.25s ease-out;
+    display: flex;
+    flex-direction: column;
+    max-height: 90vh;
+}
+
+@keyframes modalSlideUp {
+    from { transform: translateY(20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+.modal-header {
+    background: linear-gradient(135deg, #1E1E1E 0%, #2D1A10 100%);
+    color: #FFFFFF;
+    padding: 16px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 2px solid var(--amber-gold);
+}
+
+.modal-header h3 {
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: var(--amber-gold);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.modal-close-btn {
+    background: transparent;
+    border: none;
+    color: #FFFFFF;
+    font-size: 1.4rem;
+    cursor: pointer;
+    line-height: 1;
+}
+
+.modal-body {
+    padding: 20px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.modal-footer {
+    padding: 14px 20px;
+    background: #F8FAFC;
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+/* Formulario estándar en modales y paneles */
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.form-group label {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--text-secondary);
+}
+
+.form-group input, .form-group select, .form-group textarea {
+    padding: 10px 12px;
+    border: 1.5px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    font-size: 0.95rem;
+    outline: none;
+    transition: border 0.2s;
+}
+
+.form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+    border-color: var(--primary-orange);
+    box-shadow: 0 0 0 3px rgba(234, 88, 12, 0.15);
+}
+
+/* Ticket Térmico 58mm/80mm ESC/POS Simulado (RF-04) */
+.thermal-ticket-preview {
+    background: #FFFFF0;
+    border: 1px dashed #94A3B8;
+    padding: 18px 14px;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 0.82rem;
+    line-height: 1.35;
+    color: #000000;
+    white-space: pre-wrap;
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    max-height: 320px;
+    overflow-y: auto;
+}
+
+/* Botones de acción en comprobantes */
+.btn-whatsapp {
+    background: #25D366;
+    color: #FFFFFF;
+    border: none;
+    padding: 10px 16px;
+    border-radius: var(--radius-sm);
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    text-decoration: none;
+    transition: background 0.2s;
+}
+
+.btn-whatsapp:hover {
+    background: #1EBE5D;
+}
+
+.btn-thermal {
+    background: #1E293B;
+    color: #FFFFFF;
+    border: none;
+    padding: 10px 16px;
+    border-radius: var(--radius-sm);
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: background 0.2s;
+}
+
+.btn-thermal:hover {
+    background: #0F172A;
+}
+
+/* =========================================================
+   PÁGINA DE INICIO DE SESIÓN (LOGIN)
+   ========================================================= */
+.login-body {
+    background: radial-gradient(circle at top, #2D1808 0%, #111827 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 20px;
+}
+
+.login-card {
+    background: #FFFFFF;
+    border-radius: var(--radius-lg);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    width: 100%;
+    max-width: 420px;
+    overflow: hidden;
+    border: 2px solid var(--amber-gold);
+}
+
+.login-brand-header {
+    background: #111827;
+    padding: 24px 20px;
+    text-align: center;
+    border-bottom: 3px solid var(--primary-orange);
+}
+
+.login-logo-img {
+    width: 84px;
+    height: 84px;
+    border-radius: 50%;
+    border: 3px solid var(--amber-gold);
+    object-fit: cover;
+    margin-bottom: 10px;
+    background: #000;
+}
+
+.login-brand-header h2 {
+    color: var(--amber-gold);
+    font-size: 1.4rem;
+    font-weight: 900;
+}
+
+.login-brand-header p {
+    color: #94A3B8;
+    font-size: 0.8rem;
+    margin-top: 4px;
+}
+
+.login-form-body {
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.quick-roles-helper {
+    background: #FFFBEB;
+    border: 1px dashed var(--amber-gold);
+    padding: 10px;
+    border-radius: var(--radius-sm);
+    font-size: 0.78rem;
+    color: #92400E;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.quick-roles-btn-row {
+    display: flex;
+    gap: 8px;
+}
+
+.btn-quick-fill {
+    flex: 1;
+    background: #FFFFFF;
+    border: 1px solid var(--border-orange);
+    padding: 4px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--primary-orange);
+    cursor: pointer;
+}
+
+.btn-quick-fill:hover {
+    background: var(--primary-orange);
+    color: #FFFFFF;
+}
+
+/* =========================================================
+   ESTILOS DE IMPRESIÓN DIRECTA PARA TICKET ESC/POS (RF-04)
+   ========================================================= */
+@media print {
+    body * {
+        visibility: hidden;
+    }
+    #printable-thermal-ticket, #printable-thermal-ticket * {
+        visibility: visible;
+    }
+    #printable-thermal-ticket {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 80mm;
+        margin: 0;
+        padding: 4mm;
+        font-family: 'Courier New', monospace;
+        font-size: 12px;
+        color: #000;
+    }
+}

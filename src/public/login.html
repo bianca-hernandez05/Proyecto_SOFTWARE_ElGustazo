@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Iniciar Sesión - El Gustazo POS</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="login-body">
+    <div class="login-card">
+        <div class="login-brand-header">
+            <img src="img/logo.jpg" alt="Logo El Gustazo" class="login-logo-img">
+            <h2>El Buen Gusto</h2>
+            <h3 style="color: #F59E0B; font-size: 1.15rem; font-weight: 800;">EL GUSTAZO</h3>
+            <p>Sierra Maestra, Managua - Sistema POS Offline</p>
+        </div>
+
+        <form class="login-form-body" onsubmit="iniciarSesion(event)">
+            <div class="quick-roles-helper">
+                <span>⚡ <strong>Accesos Rápidos de Prueba (RBAC):</strong></span>
+                <div class="quick-roles-btn-row">
+                    <button type="button" class="btn-quick-fill" onclick="llenarCredenciales('admin', 'admin123')">Administrador</button>
+                    <button type="button" class="btn-quick-fill" onclick="llenarCredenciales('cajero', 'cajero123')">Cajero</button>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="txt-user">Usuario del Sistema:</label>
+                <input type="text" id="txt-user" required placeholder="Ej: admin o cajero" autocomplete="username">
+            </div>
+
+            <div class="form-group">
+                <label for="txt-pass">Contraseña:</label>
+                <input type="password" id="txt-pass" required placeholder="••••••••" autocomplete="current-password">
+            </div>
+
+            <button type="submit" class="btn-charge" style="margin-top: 6px;">
+                Entrar al Sistema
+            </button>
+        </form>
+    </div>
+
+    <script src="js/app.js"></script>
+    <script>
+        function llenarCredenciales(usuario, clave) {
+            document.getElementById('txt-user').value = usuario;
+            document.getElementById('txt-pass').value = clave;
+        }
+
+        async function iniciarSesion(e) {
+            e.preventDefault();
+            const usuario = document.getElementById('txt-user').value;
+            const password = document.getElementById('txt-pass').value;
+
+            try {
+                const res = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ usuario, password })
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    guardarSesionUsuario(data);
+                    mostrarToast(`¡Bienvenido, ${data.nombre}!`);
+
+                    setTimeout(() => {
+                        if (data.id_rol === 1) {
+                            window.location.href = 'admin.html';
+                        } else {
+                            window.location.href = 'pos.html';
+                        }
+                    }, 500);
+                } else {
+                    alert(data.error || 'Credenciales inválidas.');
+                }
+            } catch (err) {
+                alert('No se pudo conectar con el servidor local.');
+            }
+        }
+    </script>
+</body>
+</html>
