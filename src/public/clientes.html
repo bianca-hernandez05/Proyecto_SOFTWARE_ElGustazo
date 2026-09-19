@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestión de Clientes - El Gustazo</title>
-    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/style.css?v=2.4">
 </head>
 <body>
     <header class="main-header">
@@ -17,15 +17,16 @@
         </a>
 
         <nav class="nav-menu">
-            <a href="pos.html" class="nav-link">🛒 POS & Ventas</a>
-            <a href="inventario.html" class="nav-link">📦 Inventario & BOM</a>
-            <a href="clientes.html" class="nav-link active">👥 Clientes</a>
-            <a href="caja.html" class="nav-link">💵 Caja Chica</a>
-            <a href="admin.html" class="nav-link admin-only">⚙️ Admin & Reportes</a>
+            <a href="pos.html" class="nav-link">POS & Ventas</a>
+            <a href="delivery.html" class="nav-link">Delivery</a>
+            <a href="inventario.html" class="nav-link">Inventario</a>
+            <a href="clientes.html" class="nav-link active">Clientes</a>
+            <a href="caja.html" class="nav-link">Caja Chica</a>
+            <a href="admin.html" class="nav-link admin-only">Administración</a>
         </nav>
 
         <div class="user-status">
-            <button id="btn-header-alert" class="header-alert-btn">⚠️ Insumos Críticos</button>
+            <button id="btn-header-alert" class="header-alert-btn">Insumos Críticos</button>
             <div class="user-badge">
                 <span id="header-user-name">Usuario</span>
                 <span id="header-user-role" class="role-pill">Rol</span>
@@ -37,7 +38,7 @@
     <main class="module-container">
         <div class="module-header-box">
             <div>
-                <h2>👥 Gestión del Universo de Clientes (RF-13, RF-14, RF-15)</h2>
+                <h2>Gestión del Universo de Clientes</h2>
                 <p>Registro, búsqueda, métricas de consumo e historial de compras para estrategias de fidelización.</p>
             </div>
             <button class="btn-charge" style="padding: 10px 18px;" onclick="abrirModalNuevoCliente()">
@@ -67,7 +68,9 @@
         <!-- Buscador de Clientes -->
         <div style="margin-bottom: 16px;">
             <div class="search-input-wrap">
-                <span class="search-icon">🔍</span>
+                <span class="search-icon">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                </span>
                 <input type="text" id="txt-buscar-cliente" placeholder="Buscar cliente por nombre o teléfono WhatsApp..." oninput="filtrarClientesEnVivo()">
             </div>
         </div>
@@ -91,11 +94,11 @@
         </div>
     </main>
 
-    <!-- Modal 1: Registrar Nuevo Cliente (RF-13) -->
+    <!-- Modal 1: Registrar Nuevo Cliente -->
     <div id="modal-nuevo-cliente" class="modal-backdrop">
         <div class="modal-box">
             <div class="modal-header">
-                <h3>👥 Registrar Nuevo Cliente</h3>
+                <h3>Registrar Nuevo Cliente</h3>
                 <button type="button" class="modal-close-btn" onclick="cerrarModalNuevoCliente()">&times;</button>
             </div>
             <form onsubmit="guardarCliente(event)">
@@ -130,11 +133,11 @@
         </div>
     </div>
 
-    <!-- Modal 2: Historial y Perfil de Consumo del Cliente (RF-15) -->
+    <!-- Modal 2: Historial y Perfil de Consumo del Cliente -->
     <div id="modal-perfil-cliente" class="modal-backdrop">
         <div class="modal-box" style="max-width: 640px;">
             <div class="modal-header">
-                <h3 id="perfil-nombre-cliente">👤 Historial de Consumo</h3>
+                <h3 id="perfil-nombre-cliente">Historial de Consumo</h3>
                 <button type="button" class="modal-close-btn" onclick="cerrarModalPerfil()">&times;</button>
             </div>
             <div class="modal-body">
@@ -175,9 +178,49 @@
                 </div>
             </div>
             <div class="modal-footer">
-                <a id="btn-perfil-whatsapp" class="btn-whatsapp" href="#" target="_blank">📱 Contactar por WhatsApp</a>
+                <a id="btn-perfil-whatsapp" class="btn-whatsapp" href="#" target="_blank">Contactar por WhatsApp</a>
                 <button type="button" class="btn-small" style="background:#94A3B8;" onclick="cerrarModalPerfil()">Cerrar</button>
             </div>
+        </div>
+    </div>
+
+    <!-- Modal 3: Editar Datos del Cliente -->
+    <div id="modal-editar-cliente" class="modal-backdrop">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h3>Editar Datos del Cliente</h3>
+                <button type="button" class="modal-close-btn" onclick="cerrarModalEditarCliente()">&times;</button>
+            </div>
+            <form id="form-editar-cliente" onsubmit="guardarEdicionCliente(event)">
+                <input type="hidden" id="txt-edit-id">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="txt-edit-nombre">Nombre Completo (*):</label>
+                        <input type="text" id="txt-edit-nombre" required placeholder="Ej: Carlos Mendoza">
+                    </div>
+                    <div class="form-group">
+                        <label for="txt-edit-telefono">Teléfono / WhatsApp (*):</label>
+                        <input type="text" id="txt-edit-telefono" required placeholder="Ej: 8877-6655">
+                    </div>
+                    <div class="form-group">
+                        <label for="txt-edit-direccion">Dirección de Entrega / Referencia:</label>
+                        <input type="text" id="txt-edit-direccion" placeholder="Ej: Barrio San Judas, portón negro">
+                    </div>
+                    <div class="form-group">
+                        <label for="select-edit-categoria">Categoría de Fidelización:</label>
+                        <select id="select-edit-categoria">
+                            <option value="Ocasional">Ocasional</option>
+                            <option value="Frecuente">Frecuente</option>
+                            <option value="VIP">VIP</option>
+                            <option value="Corporativo">Corporativo</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-small" style="background:#94A3B8;" onclick="cerrarModalEditarCliente()">Cancelar</button>
+                    <button type="submit" class="btn-charge" style="padding: 8px 16px; background:#F59E0B;">Actualizar Cliente</button>
+                </div>
+            </form>
         </div>
     </div>
 
@@ -221,9 +264,14 @@
                     <td>${cl.direccion || 'Sin registrar'}</td>
                     <td><span class="status-badge ${badgeColor}">${cl.categoria}</span></td>
                     <td>
-                        <button class="btn-small" style="background:#0284C7;" onclick="verPerfilCliente(${cl.id_cliente})">
-                            📊 Ver Perfil & Compras
-                        </button>
+                        <div style="display:flex; gap:6px;">
+                            <button class="btn-small" style="background:#F59E0B; padding:5px 10px;" onclick="abrirModalEditarCliente(${cl.id_cliente})" title="Editar datos">
+                                Editar
+                            </button>
+                            <button class="btn-small" style="background:#0284C7; padding:5px 10px;" onclick="verPerfilCliente(${cl.id_cliente})">
+                                Perfil & Compras
+                            </button>
+                        </div>
                     </td>
                 `;
                 tbody.appendChild(tr);
@@ -284,7 +332,7 @@
 
                 if (!data.cliente) return;
 
-                document.getElementById('perfil-nombre-cliente').innerText = `👤 Perfil: ${data.cliente.nombre}`;
+                document.getElementById('perfil-nombre-cliente').innerText = `Perfil: ${data.cliente.nombre}`;
                 document.getElementById('perfil-tel').innerText = data.cliente.telefono || 'Sin teléfono';
                 document.getElementById('perfil-cat').innerText = data.cliente.categoria;
                 document.getElementById('perfil-total-gastado').innerText = formatoMoneda(data.estadisticas.total_gastado);
@@ -320,6 +368,48 @@
 
         function cerrarModalPerfil() {
             document.getElementById('modal-perfil-cliente').classList.remove('open');
+        }
+
+        function abrirModalEditarCliente(idCliente) {
+            const cliente = clientesList.find(c => c.id_cliente === idCliente);
+            if (!cliente) return;
+            document.getElementById('txt-edit-id').value = cliente.id_cliente;
+            document.getElementById('txt-edit-nombre').value = cliente.nombre || '';
+            document.getElementById('txt-edit-telefono').value = cliente.telefono || '';
+            document.getElementById('txt-edit-direccion').value = cliente.direccion || '';
+            document.getElementById('select-edit-categoria').value = cliente.categoria || 'Ocasional';
+            document.getElementById('modal-editar-cliente').classList.add('open');
+        }
+
+        function cerrarModalEditarCliente() {
+            document.getElementById('modal-editar-cliente').classList.remove('open');
+        }
+
+        async function guardarEdicionCliente(e) {
+            e.preventDefault();
+            const id = document.getElementById('txt-edit-id').value;
+            const nombre = document.getElementById('txt-edit-nombre').value;
+            const telefono = document.getElementById('txt-edit-telefono').value;
+            const direccion = document.getElementById('txt-edit-direccion').value;
+            const categoria = document.getElementById('select-edit-categoria').value;
+
+            try {
+                const res = await fetch(`/api/clientes/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ nombre, telefono, direccion, categoria })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    mostrarToast('Cliente actualizado correctamente.');
+                    cerrarModalEditarCliente();
+                    await cargarClientes();
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            } catch (err) {
+                alert('Error al conectar con el servidor.');
+            }
         }
     </script>
 </body>

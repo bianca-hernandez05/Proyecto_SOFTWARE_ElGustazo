@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Pedidos a Domicilio (Delivery) - El Gustazo</title>
+    <link rel="stylesheet" href="css/style.css?v=2.3">
+</head>
+
+<body>
+    <!-- Encabezado Institucional -->
+    <header class="main-header">
+        <a href="pos.html" class="logo-area">
+            <img src="img/logo.jpg" alt="Logo El Gustazo" class="brand-logo-img">
+            <div class="logo-title-wrap">
+                <h1>EL GUSTAZO</h1>
+                <p>Sierra Maestra, Managua - Despacho & Delivery</p>
+            </div>
+        </a>
+
+        <nav class="nav-menu">
+            <a href="pos.html" class="nav-link">POS & Ventas</a>
+            <a href="delivery.html" class="nav-link active">Delivery</a>
+            <a href="inventario.html" class="nav-link">Inventario</a>
+            <a href="clientes.html" class="nav-link">Clientes</a>
+            <a href="caja.html" class="nav-link">Caja Chica</a>
+            <a href="admin.html" class="nav-link admin-only">Administración</a>
+        </nav>
+
+        <div class="user-status">
+            <button id="btn-header-alert" class="header-alert-btn">Insumos Críticos</button>
+            <div class="user-badge">
+                <span id="header-user-name">Usuario</span>
+                <span id="header-user-role" class="role-pill">Cajero</span>
+            </div>
+            <button onclick="cerrarSesion()" class="btn-logout">Salir</button>
+        </div>
+    </header>
+
+    <!-- Contenedor Principal de Delivery -->
+    <main class="delivery-container">
+        <!-- Barra Superior de Control de Delivery -->
+        <div class="delivery-top-bar">
+            <div>
+                <h2>Gestión de Pedidos a Domicilio (Delivery)</h2>
+                <p class="section-desc">Panel visual para registrar y despachar pedidos por WhatsApp y llamadas en
+                    Sierra Maestra y zonas aledañas</p>
+            </div>
+            <div class="delivery-actions-wrap">
+                <button type="button" class="btn-charge" onclick="abrirModalNuevoPedidoDelivery()">
+                    + Registrar Pedido Delivery
+                </button>
+                <button type="button" class="btn-small" style="background:#0284C7;" onclick="cargarTableroDelivery()">
+                    Actualizar Tablero
+                </button>
+            </div>
+        </div>
+
+        <!-- Métricas Rápidas de Entrega -->
+        <div class="delivery-kpis-grid">
+            <div class="del-kpi-card">
+                <span class="del-kpi-label">Pendientes de Cocina</span>
+                <strong class="del-kpi-val" id="kpi-del-pendientes">0</strong>
+            </div>
+            <div class="del-kpi-card">
+                <span class="del-kpi-label">En Preparación</span>
+                <strong class="del-kpi-val" id="kpi-del-preparacion" style="color:#D97706;">0</strong>
+            </div>
+            <div class="del-kpi-card">
+                <span class="del-kpi-label">Listos / Empacados</span>
+                <strong class="del-kpi-val" id="kpi-del-listos" style="color:#2563EB;">0</strong>
+            </div>
+            <div class="del-kpi-card">
+                <span class="del-kpi-label">En Camino (Motorizados)</span>
+                <strong class="del-kpi-val" id="kpi-del-camino" style="color:#7C3AED;">0</strong>
+            </div>
+            <div class="del-kpi-card">
+                <span class="del-kpi-label">Entregados Hoy</span>
+                <strong class="del-kpi-val" id="kpi-del-entregados" style="color:#16A34A;">0</strong>
+            </div>
+        </div>
+
+        <!-- Tablero Visual Kanban de 5 Estados -->
+        <div class="delivery-kanban-board">
+            <!-- Columna 1: Pendientes -->
+            <div class="kanban-col">
+                <div class="kanban-col-header col-pendiente">
+                    <span>Pendiente</span>
+                    <span class="col-count-badge" id="count-col-pendiente">0</span>
+                </div>
+                <div class="kanban-cards-wrap" id="col-cards-pendiente">
+                    <!-- Tarjetas de pedidos pendientes -->
+                </div>
+            </div>
+
+            <!-- Columna 2: En Preparación -->
+            <div class="kanban-col">
+                <div class="kanban-col-header col-preparacion">
+                    <span>En Preparación</span>
+                    <span class="col-count-badge" id="count-col-preparacion">0</span>
+                </div>
+                <div class="kanban-cards-wrap" id="col-cards-preparacion">
+                    <!-- Tarjetas de pedidos en preparación -->
+                </div>
+            </div>
+
+            <!-- Columna 3: Listos -->
+            <div class="kanban-col">
+                <div class="kanban-col-header col-listo">
+                    <span>Listo / Por Salir</span>
+                    <span class="col-count-badge" id="count-col-listo">0</span>
+                </div>
+                <div class="kanban-cards-wrap" id="col-cards-listo">
+                    <!-- Tarjetas de pedidos listos -->
+                </div>
+            </div>
+
+            <!-- Columna 4: En Camino -->
+            <div class="kanban-col">
+                <div class="kanban-col-header col-camino">
+                    <span>En Camino</span>
+                    <span class="col-count-badge" id="count-col-camino">0</span>
+                </div>
+                <div class="kanban-cards-wrap" id="col-cards-camino">
+                    <!-- Tarjetas de pedidos en camino -->
+                </div>
+            </div>
+
+            <!-- Columna 5: Entregados -->
+            <div class="kanban-col">
+                <div class="kanban-col-header col-entregado">
+                    <span>Entregado</span>
+                    <span class="col-count-badge" id="count-col-entregado">0</span>
+                </div>
+                <div class="kanban-cards-wrap" id="col-cards-entregado">
+                    <!-- Tarjetas de pedidos entregados -->
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal 1: Registrar Nuevo Pedido a Domicilio -->
+    <div id="modal-nuevo-delivery" class="modal-backdrop">
+        <div class="modal-box" style="max-width: 800px;">
+            <div class="modal-header">
+                <h3>Registrar Pedido a Domicilio (Delivery)</h3>
+                <button type="button" class="modal-close-btn"
+                    onclick="cerrarModalNuevoPedidoDelivery()">&times;</button>
+            </div>
+            <form onsubmit="guardarPedidoDelivery(event)">
+                <div class="modal-body" style="max-height: 70vh; overflow-y: auto;">
+                    <!-- Sección A: Origen y Datos del Cliente -->
+                    <div class="del-section-title">1. Datos del Cliente y Dirección</div>
+                    <div class="del-form-grid">
+                        <div class="form-group">
+                            <label for="select-del-cliente">Cliente Registrado:</label>
+                            <select id="select-del-cliente" onchange="alCambiarClienteDelivery()">
+                                <option value="">-- Seleccionar o crear nuevo --</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="txt-del-origen">Canal de Entrada (*):</label>
+                            <select id="txt-del-origen">
+                                <option value="WHATSAPP">WhatsApp</option>
+                                <option value="LLAMADA">Llamada Telefónica</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="del-form-grid">
+                        <div class="form-group">
+                            <label for="txt-del-nombre">Nombre del Cliente (*):</label>
+                            <input type="text" id="txt-del-nombre" required placeholder="Ej: Carlos Mendoza">
+                        </div>
+                        <div class="form-group">
+                            <label for="txt-del-telefono">Teléfono / WhatsApp (*):</label>
+                            <input type="text" id="txt-del-telefono" required placeholder="Ej: 8899-7711">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="txt-del-direccion">Dirección Exacta de Entrega en Sierra Maestra o Zona (*):</label>
+                        <input type="text" id="txt-del-direccion" required
+                            placeholder="Ej: Sierra Maestra, de los semáforos 2c al sur, casa esquinera">
+                    </div>
+
+                    <div class="del-form-grid">
+                        <div class="form-group">
+                            <label for="select-del-repartidor">Repartidor Asignado (Opcional):</label>
+                            <select id="select-del-repartidor">
+                                <option value="">Por asignar al empacar</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="txt-del-costo-envio">Recargo por Envío Delivery (C$):</label>
+                            <input type="number" id="txt-del-costo-envio" value="30" min="0" step="5"
+                                oninput="calcularTotalesModalDelivery()">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="txt-del-notas">Instrucciones Especiales / Notas:</label>
+                        <input type="text" id="txt-del-notas"
+                            placeholder="Ej: Tocar el portón negro, sin cebolla en las hamburguesas">
+                    </div>
+
+                    <!-- Sección B: Selección de Platillos y Menú -->
+                    <div class="del-section-title" style="margin-top: 15px;">2. Platillos y Combos a Despachar</div>
+                    <div class="del-form-grid">
+                        <div class="form-group" style="flex: 2;">
+                            <label for="select-del-producto">Platillo / Combo:</label>
+                            <select id="select-del-producto">
+                                <!-- Opciones cargadas dinámicamente -->
+                            </select>
+                        </div>
+                        <div class="form-group" style="flex: 0.8;">
+                            <label for="txt-del-prod-cant">Cantidad:</label>
+                            <input type="number" id="txt-del-prod-cant" value="1" min="1" max="50">
+                        </div>
+                        <div class="form-group" style="flex: 0.8; align-self: flex-end;">
+                            <button type="button" class="btn-small" style="background:#0284C7; width:100%; height:38px;"
+                                onclick="agregarItemADelivery()">
+                                + Agregar
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Tabla de productos en la orden de delivery -->
+                    <table class="factura-table" style="margin-top: 10px;">
+                        <thead>
+                            <tr>
+                                <th>Platillo</th>
+                                <th style="width:60px;">Cant</th>
+                                <th style="text-align:right;">Precio</th>
+                                <th style="text-align:right;">Subtotal</th>
+                                <th style="width:40px;"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="del-items-body">
+                            <tr>
+                                <td colspan="5" style="text-align:center; color:#94A3B8; padding:15px;">Agregue
+                                    platillos al pedido</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <!-- Sección C: Forma de Pago y Totales -->
+                    <div class="del-section-title" style="margin-top: 15px;">3. Forma de Pago y Totales</div>
+                    <div class="del-form-grid">
+                        <div class="form-group">
+                            <label for="select-del-metodo-pago">Método de Pago:</label>
+                            <select id="select-del-metodo-pago" onchange="alCambiarMetodoPagoDelivery()">
+                                <option value="1">Efectivo contra entrega</option>
+                                <option value="2">Transferencia Bancaria</option>
+                            </select>
+                        </div>
+                        <div class="form-group" id="group-del-banco" style="display:none;">
+                            <label for="select-del-banco">Banco de Destino:</label>
+                            <select id="select-del-banco">
+                                <option value="BAC">BAC Credomatic</option>
+                                <option value="Banpro">Banpro Grupo Promerica</option>
+                                <option value="Lafise">Banco LAFISE Bancentro</option>
+                                <option value="BDF">Banco BDF</option>
+                                <option value="Ficohsa">Banco Ficohsa</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group" id="group-del-referencia" style="display:none;">
+                        <label for="txt-del-referencia">Código de Confirmación / Referencia Bancaria:</label>
+                        <input type="text" id="txt-del-referencia" placeholder="Ej: #TRF-982341">
+                    </div>
+
+                    <!-- Resumen de Totales -->
+                    <div class="del-totales-box">
+                        <div>Subtotal Platillos: <strong id="del-lbl-subtotal">C$ 0.00</strong></div>
+                        <div>Envío a Domicilio: <strong id="del-lbl-envio">C$ 30.00</strong></div>
+                        <div class="del-total-destacado">TOTAL A COBRAR: <strong id="del-lbl-total">C$ 30.00</strong>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-small" style="background:#94A3B8;"
+                        onclick="cerrarModalNuevoPedidoDelivery()">Cancelar</button>
+                    <button type="submit" class="btn-charge" style="padding: 10px 20px;">
+                        Confirmar y Despachar Pedido
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal 2: Comanda de Cocina / Despacho Térmico -->
+    <div id="modal-ticket-cocina" class="modal-backdrop">
+        <div class="modal-box" style="max-width: 540px;">
+            <div class="modal-header">
+                <h3>Comanda de Cocina y Despacho Delivery</h3>
+                <button type="button" class="modal-close-btn" onclick="cerrarModalTicketCocina()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="preview-ticket-cocina" class="thermal-ticket-preview"></div>
+            </div>
+            <div class="modal-footer" style="justify-content: space-between;">
+                <button type="button" class="btn-thermal" onclick="imprimirTicketCocina()">
+                    Imprimir Comanda Físicamente
+                </button>
+                <button type="button" class="btn-small" style="background:#94A3B8;" onclick="cerrarModalTicketCocina()">
+                    Cerrar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal 3: Factura Comercial con QR para Delivery -->
+    <div id="modal-factura-delivery" class="modal-backdrop">
+        <div class="modal-box" style="max-width: 650px;">
+            <div class="modal-header">
+                <h3>Factura Comercial de Entrega</h3>
+                <button type="button" class="modal-close-btn" onclick="cerrarModalFacturaDelivery()">&times;</button>
+            </div>
+            <div class="modal-body" style="max-height: 70vh; overflow-y: auto;">
+                <div id="factura-delivery-sheet" class="factura-comercial-sheet">
+                    <div class="factura-header">
+                        <div class="factura-logo-wrap">
+                            <img src="img/logo.jpg" alt="El Gustazo" class="factura-logo-img">
+                            <div>
+                                <h3 class="factura-empresa-titulo">EL BUEN GUSTO - EL GUSTAZO</h3>
+                                <p class="factura-empresa-sub">A tu Paladar - Sierra Maestra, Managua</p>
+                                <p class="factura-empresa-sub">Teléfono: (505) 8899-7711 / 8765-4321</p>
+                            </div>
+                        </div>
+                        <div class="factura-fiscal-box">
+                            <span class="factura-badge">ENTREGA A DOMICILIO</span>
+                            <div class="factura-num" id="fac-del-num">DEL-0000</div>
+                            <div class="factura-fecha" id="fac-del-fecha">18/09/2026</div>
+                        </div>
+                    </div>
+
+                    <div class="factura-cliente-grid">
+                        <div>
+                            <span class="fac-label">CLIENTE:</span>
+                            <strong id="fac-del-cliente">Cliente</strong>
+                        </div>
+                        <div>
+                            <span class="fac-label">TELÉFONO:</span>
+                            <span id="fac-del-telefono">--</span>
+                        </div>
+                        <div>
+                            <span class="fac-label">REPARTIDOR:</span>
+                            <span id="fac-del-repartidor">Por asignar</span>
+                        </div>
+                        <div>
+                            <span class="fac-label">DIRECCIÓN DE ENTREGA:</span>
+                            <span id="fac-del-direccion">Sierra Maestra</span>
+                        </div>
+                    </div>
+
+                    <table class="factura-table">
+                        <thead>
+                            <tr>
+                                <th>Cant</th>
+                                <th>Descripción</th>
+                                <th style="text-align:right;">P. Unit</th>
+                                <th style="text-align:right;">Subtotal</th>
+                            </tr>
+                        </thead>
+                        <tbody id="fac-del-items-body"></tbody>
+                    </table>
+
+                    <div class="factura-resumen-grid">
+                        <div class="factura-qr-section">
+                            <div id="factura-del-qr" class="qr-canvas-wrap"></div>
+                            <div style="margin-top:6px; text-align:center;">
+                                <span class="qr-caption"
+                                    style="display:block; font-weight:700; color:#15803D; font-size:0.75rem;">
+                                    📱 Escanee para WhatsApp
+                                </span>
+                                <a id="lnk-probar-qr-del" href="#" target="_blank"
+                                    style="font-size:0.73rem; color:#EA580C; font-weight:700; text-decoration:none; display:inline-block; margin-top:3px;">
+                                    ↗ Probar enlace directo
+                                </a>
+                            </div>
+                        </div>
+                        <div class="factura-totales-col">
+                            <div class="fac-total-row"><span>Subtotal:</span><strong id="fac-del-subtotal">C$
+                                    0.00</strong></div>
+                            <div class="fac-total-row"><span>Costo Delivery:</span><strong id="fac-del-costo-envio">C$
+                                    0.00</strong></div>
+                            <div class="fac-total-row" style="display:none;"><span>IVA:</span><strong
+                                    id="fac-del-iva">C$ 0.00</strong></div>
+                            <div class="fac-total-row fac-grand-total"><span>TOTAL COBRAR:</span><strong
+                                    id="fac-del-total">C$ 0.00</strong></div>
+                            <div class="fac-pago-info" id="fac-del-pago-info">Pago: Efectivo</div>
+                        </div>
+                    </div>
+
+                    <div class="factura-footer-msg">
+                        <p>¡Muchas gracias por su preferencia! Que disfrute su comida en casa.</p>
+                        <small>El Gustazo POS Offline - Sierra Maestra</small>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer" style="justify-content: space-between;">
+                <button type="button" class="btn-charge" onclick="imprimirFacturaDeliveryPDF()">
+                    Imprimir / Guardar Factura PDF
+                </button>
+                <button type="button" class="btn-small" style="background:#94A3B8;"
+                    onclick="cerrarModalFacturaDelivery()">
+                    Cerrar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/qrcode.min.js"></script>
+    <script src="js/delivery.js?v=2.3"></script>
+</body>
+
+</html>

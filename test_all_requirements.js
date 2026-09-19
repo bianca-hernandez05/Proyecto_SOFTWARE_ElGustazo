@@ -13,7 +13,7 @@ async function testAllRequirements() {
     const loginAdminRes = await fetch(`${BASE_URL}/api/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ usuario: 'admin', password: 'admin123' })
+        body: JSON.stringify({ usuario: 'admin', password: 'admin123*' })
     });
     const loginAdmin = await loginAdminRes.json();
     assert.strictEqual(loginAdmin.success, true);
@@ -23,7 +23,7 @@ async function testAllRequirements() {
     const loginCajeroRes = await fetch(`${BASE_URL}/api/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ usuario: 'cajero', password: 'cajero123' })
+        body: JSON.stringify({ usuario: 'cajero', password: 'cajero123*' })
     });
     const loginCajero = await loginCajeroRes.json();
     assert.strictEqual(loginCajero.success, true);
@@ -88,7 +88,7 @@ async function testAllRequirements() {
     const insumosPrevRes = await fetch(`${BASE_URL}/api/insumos`);
     const insumosPrev = await insumosPrevRes.json();
     const panPrev = insumosPrev.find(i => i.nombre.includes('Pan'));
-    const carnePrev = insumosPrev.find(i => i.nombre.includes('Torta de Res'));
+    const carnePrev = insumosPrev.find(i => i.nombre.includes('Carne'));
 
     const ventaEfRes = await fetch(`${BASE_URL}/api/ventas`, {
         method: 'POST',
@@ -109,11 +109,11 @@ async function testAllRequirements() {
     const ventaEfData = await ventaEfRes.json();
     assert.strictEqual(ventaEfData.success, true);
     
-    // Validar cálculos (RF-03): Subtotal: 140*2 + 85 = 365, IVA: 365*0.15 = 54.75, Total: 419.75, Vuelto: 500 - 419.75 = 80.25
+    // Validar cálculos (RF-03): Subtotal: 140*2 + 85 = 365, Impuesto: 0 (Sin IVA), Total: 365, Vuelto: 500 - 365 = 135
     assert.strictEqual(ventaEfData.venta.subtotal, 365);
-    assert.strictEqual(ventaEfData.venta.impuesto, 54.75);
-    assert.strictEqual(ventaEfData.venta.total, 419.75);
-    assert.strictEqual(ventaEfData.venta.vuelto, 80.25);
+    assert.strictEqual(ventaEfData.venta.impuesto, 0);
+    assert.strictEqual(ventaEfData.venta.total, 365);
+    assert.strictEqual(ventaEfData.venta.vuelto, 135);
     console.log(`  ✓ Factura generada: ${ventaEfData.venta.numero_factura} | Total: C$ ${ventaEfData.venta.total} | Vuelto: C$ ${ventaEfData.venta.vuelto}`);
 
     // Validar Comprobante Físico ESC/POS (RF-04)
@@ -130,11 +130,11 @@ async function testAllRequirements() {
     const insumosPostRes = await fetch(`${BASE_URL}/api/insumos`);
     const insumosPost = await insumosPostRes.json();
     const panPost = insumosPost.find(i => i.nombre.includes('Pan'));
-    const carnePost = insumosPost.find(i => i.nombre.includes('Torta de Res'));
+    const carnePost = insumosPost.find(i => i.nombre.includes('Carne'));
     
-    // 2 hamburguesas = descuentan 2 panes y 2 tortas de carne
-    assert.strictEqual(panPost.stock_actual, panPrev.stock_actual - 2);
-    assert.strictEqual(carnePost.stock_actual, carnePrev.stock_actual - 2);
+    // 2 hamburguesas sencillas (4 panes, 2 carnes) + 1 hamburguesa triple (2 panes, 3 carnes) = 6 panes y 5 carnes
+    assert.strictEqual(panPost.stock_actual, panPrev.stock_actual - 6);
+    assert.strictEqual(carnePost.stock_actual, carnePrev.stock_actual - 5);
     console.log(`  ✓ Insumos descontados por BOM: Pan (${panPrev.stock_actual} -> ${panPost.stock_actual}), Carne (${carnePrev.stock_actual} -> ${carnePost.stock_actual})`);
 
     // 6. MÓDULO 2: PAGOS MULTICANAL CON TRANSFERENCIA Y BANCOS NACIONALES (RF-06, RF-07, RF-08)
@@ -174,7 +174,7 @@ async function testAllRequirements() {
     });
     const ventaTrfData = await ventaTrfRes.json();
     assert.strictEqual(ventaTrfData.success, true);
-    assert.strictEqual(ventaTrfData.venta.banco, undefined); // en payload de respuesta
+    assert.strictEqual(ventaTrfData.venta.banco, 'Banpro');
     assert(ventaTrfData.ticket_esc_pos.includes('Banpro'), 'Ticket debe indicar banco Banpro');
     assert(ventaTrfData.ticket_esc_pos.includes('#TRF-88997701'), 'Ticket debe indicar código de referencia');
     console.log('  ✓ Venta por Transferencia Bancaria exitosa (Banco: Banpro, Referencia: #TRF-88997701)');

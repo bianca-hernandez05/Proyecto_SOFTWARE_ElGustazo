@@ -17,15 +17,16 @@
         </a>
 
         <nav class="nav-menu">
-            <a href="pos.html" class="nav-link">🛒 POS & Ventas</a>
-            <a href="inventario.html" class="nav-link">📦 Inventario & BOM</a>
-            <a href="clientes.html" class="nav-link">👥 Clientes</a>
-            <a href="caja.html" class="nav-link active">💵 Caja Chica</a>
-            <a href="admin.html" class="nav-link admin-only">⚙️ Admin & Reportes</a>
+            <a href="pos.html" class="nav-link">POS & Ventas</a>
+            <a href="delivery.html" class="nav-link">Delivery</a>
+            <a href="inventario.html" class="nav-link">Inventario</a>
+            <a href="clientes.html" class="nav-link">Clientes</a>
+            <a href="caja.html" class="nav-link active">Caja Chica</a>
+            <a href="admin.html" class="nav-link admin-only">Administración</a>
         </nav>
 
         <div class="user-status">
-            <button id="btn-header-alert" class="header-alert-btn">⚠️ Insumos Críticos</button>
+            <button id="btn-header-alert" class="header-alert-btn">Insumos Críticos</button>
             <div class="user-badge">
                 <span id="header-user-name">Usuario</span>
                 <span id="header-user-role" class="role-pill">Rol</span>
@@ -37,7 +38,7 @@
     <main class="module-container">
         <div class="module-header-box">
             <div>
-                <h2>💵 Control Financiero, Caja Chica y Arqueos (RF-16, RF-17, RF-18)</h2>
+                <h2>Control Financiero, Caja Chica y Arqueos</h2>
                 <p>Apertura con fondo inicial, monitoreo financiero en vivo, desglose de transferencias por banco y cierre de turno.</p>
             </div>
             <div id="caja-status-indicator">
@@ -45,14 +46,14 @@
             </div>
         </div>
 
-        <!-- SECCIÓN 1: SI LA CAJA ESTÁ CERRADA (Apertura de turno RF-16) -->
+        <!-- SECCIÓN 1: SI LA CAJA ESTÁ CERRADA -->
         <section id="seccion-caja-cerrada" style="display: none; max-width: 600px; margin: 30px auto;">
             <div class="table-card" style="padding: 24px;">
                 <h3 style="color:var(--primary-orange); margin-bottom: 12px; font-size:1.2rem;">
-                    🔒 No hay ningún turno de caja abierto actualmente
+                    No hay ningún turno de caja abierto actualmente
                 </h3>
                 <p style="color:var(--text-secondary); margin-bottom: 20px; font-size: 0.95rem;">
-                    Para comenzar a facturar en el punto de venta, debe ingresar el fondo inicial en efectivo asignado a la gaveta física de la caja.
+                    Para comenzar a facturar en el punto de venta o en delivery, debe ingresar el fondo inicial en efectivo asignado a la gaveta física de la caja.
                 </p>
 
                 <form onsubmit="abrirTurnoCaja(event)">
@@ -67,13 +68,13 @@
                     </div>
 
                     <button type="submit" class="btn-charge" style="width: 100%;">
-                        🔓 Abrir Turno de Caja Chica
+                        Abrir Turno de Caja Chica
                     </button>
                 </form>
             </div>
         </section>
 
-        <!-- SECCIÓN 2: SI LA CAJA ESTÁ ABIERTA (Arqueo y Monitoreo en Vivo RF-17, RF-18) -->
+        <!-- SECCIÓN 2: SI LA CAJA ESTÁ ABIERTA -->
         <section id="seccion-caja-abierta" style="display: none;">
             <!-- Tarjetas de Monitoreo Financiero -->
             <div class="kpi-grid">
@@ -99,39 +100,39 @@
                 </div>
             </div>
 
-            <!-- Panel de Desglose por Bancos Nacionales (RF-18) -->
+            <!-- Panel de Desglose por Bancos Nacionales con Logos Oficiales -->
             <div class="table-card" style="padding: 16px 20px; margin-bottom: 20px;">
-                <h3 style="font-size:1.05rem; color:var(--text-primary); margin-bottom: 12px; display:flex; align-items:center; gap:8px;">
-                    🏦 Desglose Financiero de Transferencias por Banco (Nicaragua)
+                <h3 style="font-size:1.05rem; color:var(--text-primary); margin-bottom: 14px;">
+                    Desglose Financiero de Transferencias por Banco (Nicaragua)
                 </h3>
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px;">
-                    <div style="background:#FFF1F2; border:1.5px solid var(--banco-bac); padding:12px; border-radius:8px; text-align:center;">
-                        <span style="color:var(--banco-bac); font-weight:800; font-size:0.85rem;">🦁 BAC CREDOMATIC</span>
-                        <h4 id="banco-monto-bac" style="font-size:1.3rem; color:var(--banco-bac); margin-top:4px;">C$ 0.00</h4>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px;">
+                    <div style="background:#FFF1F2; border:1.5px solid #E11D48; padding:14px; border-radius:8px; text-align:center; display:flex; flex-direction:column; align-items:center;">
+                        <img src="img/bac.png" alt="BAC Credomatic" style="height:30px; max-width:140px; object-fit:contain; margin-bottom:8px;">
+                        <h4 id="banco-monto-bac" style="font-size:1.3rem; color:#E11D48; margin:0;">C$ 0.00</h4>
                     </div>
-                    <div style="background:#F0FDF4; border:1.5px solid var(--banco-banpro); padding:12px; border-radius:8px; text-align:center;">
-                        <span style="color:var(--banco-banpro); font-weight:800; font-size:0.85rem;">🏛️ BANPRO PROMERICA</span>
-                        <h4 id="banco-monto-banpro" style="font-size:1.3rem; color:var(--banco-banpro); margin-top:4px;">C$ 0.00</h4>
+                    <div style="background:#F0FDF4; border:1.5px solid #16A34A; padding:14px; border-radius:8px; text-align:center; display:flex; flex-direction:column; align-items:center;">
+                        <img src="img/banpro.png" alt="Banpro Grupo Promerica" style="height:30px; max-width:140px; object-fit:contain; margin-bottom:8px;">
+                        <h4 id="banco-monto-banpro" style="font-size:1.3rem; color:#16A34A; margin:0;">C$ 0.00</h4>
                     </div>
-                    <div style="background:#F0FDF4; border:1.5px solid var(--banco-lafise); padding:12px; border-radius:8px; text-align:center;">
-                        <span style="color:var(--banco-lafise); font-weight:800; font-size:0.85rem;">🏢 LAFISE BANCENTRO</span>
-                        <h4 id="banco-monto-lafise" style="font-size:1.3rem; color:var(--banco-lafise); margin-top:4px;">C$ 0.00</h4>
+                    <div style="background:#F0FDF4; border:1.5px solid #059669; padding:14px; border-radius:8px; text-align:center; display:flex; flex-direction:column; align-items:center;">
+                        <img src="img/lafise.png" alt="Banco LAFISE" style="height:30px; max-width:140px; object-fit:contain; margin-bottom:8px;">
+                        <h4 id="banco-monto-lafise" style="font-size:1.3rem; color:#059669; margin:0;">C$ 0.00</h4>
                     </div>
-                    <div style="background:#F0F9FF; border:1.5px solid var(--banco-bdf); padding:12px; border-radius:8px; text-align:center;">
-                        <span style="color:var(--banco-bdf); font-weight:800; font-size:0.85rem;">🔷 BANCO BDF</span>
-                        <h4 id="banco-monto-bdf" style="font-size:1.3rem; color:var(--banco-bdf); margin-top:4px;">C$ 0.00</h4>
+                    <div style="background:#F0F9FF; border:1.5px solid #0284C7; padding:14px; border-radius:8px; text-align:center; display:flex; flex-direction:column; align-items:center;">
+                        <img src="img/bdf.svg" alt="Banco BDF" style="height:30px; max-width:140px; object-fit:contain; margin-bottom:8px;">
+                        <h4 id="banco-monto-bdf" style="font-size:1.3rem; color:#0284C7; margin:0;">C$ 0.00</h4>
                     </div>
-                    <div style="background:#F0F9FF; border:1.5px solid var(--banco-ficohsa); padding:12px; border-radius:8px; text-align:center;">
-                        <span style="color:var(--banco-ficohsa); font-weight:800; font-size:0.85rem;">🌐 BANCO FICOHSA</span>
-                        <h4 id="banco-monto-ficohsa" style="font-size:1.3rem; color:var(--banco-ficohsa); margin-top:4px;">C$ 0.00</h4>
+                    <div style="background:#F0F9FF; border:1.5px solid #0A2540; padding:14px; border-radius:8px; text-align:center; display:flex; flex-direction:column; align-items:center;">
+                        <img src="img/ficohsa.svg" alt="Banco Ficohsa" style="height:30px; max-width:140px; object-fit:contain; margin-bottom:8px;">
+                        <h4 id="banco-monto-ficohsa" style="font-size:1.3rem; color:#0A2540; margin:0;">C$ 0.00</h4>
                     </div>
                 </div>
             </div>
 
-            <!-- Formulario de Arqueo y Cierre de Turno (RF-17) -->
+            <!-- Formulario de Arqueo y Cierre de Turno -->
             <div class="table-card" style="padding: 20px; border-top: 4px solid var(--primary-orange);">
                 <h3 style="font-size:1.15rem; color:var(--primary-orange); margin-bottom: 8px;">
-                    📝 Procesar Arqueo Físico y Cierre de Turno
+                    Procesar Arqueo Físico y Cierre de Turno
                 </h3>
                 <p style="font-size:0.85rem; color:var(--text-secondary); margin-bottom: 16px;">
                     Cuente el dinero físico en la gaveta e ingréselo para calcular la diferencia de cuadre (Exacto, Sobrante o Faltante).
@@ -158,7 +159,7 @@
                     </div>
 
                     <button type="submit" class="btn-charge" style="background:linear-gradient(135deg, #DC2626 0%, #B91C1C 100%);">
-                        🔒 Confirmar y Cerrar Turno de Caja
+                        Confirmar y Cerrar Turno de Caja
                     </button>
                 </form>
             </div>
@@ -167,7 +168,7 @@
         <!-- SECCIÓN 3: HISTORIAL DE ARQUEOS ANTERIORES -->
         <div style="margin-top: 28px;">
             <h3 style="font-size:1.1rem; color:var(--text-primary); margin-bottom: 12px;">
-                📜 Historial de Arqueos y Cierres de Turno
+                Historial de Arqueos y Cierres de Turno
             </h3>
             <div class="table-card">
                 <table class="data-table">
@@ -217,15 +218,13 @@
                     cajaActiva = data.caja;
                     secCerrada.style.display = 'none';
                     secAbierta.style.display = 'block';
-                    indStatus.innerHTML = `<span class="status-badge success" style="font-size:0.9rem; padding:6px 14px;">✓ Turno #${cajaActiva.id_caja} ABIERTO</span>`;
+                    indStatus.innerHTML = `<span class="status-badge success" style="font-size:0.9rem; padding:6px 14px;">Turno #${cajaActiva.id_caja} ABIERTO</span>`;
 
-                    // Actualizar KPIs
                     document.getElementById('kpi-fondo-inicial').innerText = formatoMoneda(cajaActiva.monto_inicial);
                     document.getElementById('kpi-ventas-efectivo').innerText = formatoMoneda(cajaActiva.total_efectivo_ventas);
                     document.getElementById('kpi-ventas-transferencia').innerText = formatoMoneda(cajaActiva.total_transferencias);
                     document.getElementById('kpi-esperado-efectivo').innerText = formatoMoneda(cajaActiva.monto_esperado_efectivo);
 
-                    // Actualizar desgloses por banco
                     const b = cajaActiva.desglose_bancos || {};
                     document.getElementById('banco-monto-bac').innerText = formatoMoneda(b['BAC'] || 0);
                     document.getElementById('banco-monto-banpro').innerText = formatoMoneda(b['Banpro'] || 0);
@@ -236,7 +235,7 @@
                     cajaActiva = null;
                     secCerrada.style.display = 'block';
                     secAbierta.style.display = 'none';
-                    indStatus.innerHTML = `<span class="status-badge danger" style="font-size:0.9rem; padding:6px 14px;">🔒 Caja CERRADA</span>`;
+                    indStatus.innerHTML = `<span class="status-badge danger" style="font-size:0.9rem; padding:6px 14px;">Caja CERRADA</span>`;
                 }
             } catch (e) {
                 console.error(e);
@@ -324,7 +323,7 @@
                 });
                 const data = await res.json();
                 if (data.success) {
-                    alert(`¡Arqueo y Cierre Exitoso!\n` +
+                    alert(`Arqueo y Cierre Exitoso\n` +
                           `Fondo Inicial: ${formatoMoneda(data.resumen.fondo_inicial)}\n` +
                           `Ventas Efectivo: ${formatoMoneda(data.resumen.ventas_efectivo)}\n` +
                           `Esperado Efectivo: ${formatoMoneda(data.resumen.monto_esperado)}\n` +

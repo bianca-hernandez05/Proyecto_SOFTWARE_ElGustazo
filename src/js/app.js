@@ -6,9 +6,7 @@
  * =========================================================
  */
 
-// =========================================================
-// 1. SESIÓN Y CONTROL DE ACCESO BASADO EN ROLES (RBAC) (RF-21, RNF-04)
-// =========================================================
+// 1. SESIÓN Y CONTROL DE ACCESO
 function obtenerUsuarioActual() {
     try {
         const userJson = localStorage.getItem('elgustazo_user');
@@ -45,29 +43,25 @@ function verificarAutenticacion(requiereAdmin = false) {
     return usuario;
 }
 
-// Inicializar cabecera común y estado de usuario
+// Inicializar cabecera común
 function inicializarHeaderComun() {
     const usuario = obtenerUsuarioActual();
     if (!usuario) return;
 
-    // Actualizar nombre y rol en la cabecera
     const spanUser = document.getElementById('header-user-name');
     const spanRol = document.getElementById('header-user-role');
     if (spanUser) spanUser.innerText = usuario.nombre;
     if (spanRol) spanRol.innerText = usuario.rol;
 
-    // Ocultar enlaces de Admin para el rol Cajero
     if (usuario.id_rol !== 1) {
         document.querySelectorAll('.admin-only').forEach(el => {
             el.style.display = 'none';
         });
     }
 
-    // Comprobar alertas de stock bajo inmediatamente
     consultarAlertasStockHeader();
 }
 
-// Consultar alertas de stock para la insignia del header (RF-10)
 async function consultarAlertasStockHeader() {
     try {
         const res = await fetch('/api/alertas-stock');
@@ -76,7 +70,7 @@ async function consultarAlertasStockHeader() {
         if (btnAlert) {
             if (data && data.length > 0) {
                 btnAlert.style.display = 'inline-flex';
-                btnAlert.innerHTML = `⚠️ Insumos Críticos (${data.length})`;
+                btnAlert.innerHTML = `Insumos Críticos (${data.length})`;
                 btnAlert.onclick = () => {
                     window.location.href = 'inventario.html';
                 };
@@ -89,9 +83,7 @@ async function consultarAlertasStockHeader() {
     }
 }
 
-// =========================================================
 // 2. UTILIDADES GENERALES
-// =========================================================
 function formatoMoneda(valor) {
     const num = parseFloat(valor) || 0;
     return `C$ ${num.toFixed(2)}`;
@@ -134,33 +126,28 @@ function mostrarToast(mensaje, tipo = 'success') {
     }, 3500);
 }
 
-// =========================================================
-// 3. LÓGICA DEL MÓDULO POS Y FACTURACIÓN (RF-01 a RF-08)
-// =========================================================
+// 3. ESTADO DEL POS Y COMANDAS
 let catalogoProductos = [];
 let comandaCarrito = [];
 let cajaActivaActual = null;
 let metodoPagoSeleccionado = 1; // 1: Efectivo, 2: Transferencia
 let bancoSeleccionado = 'BAC'; // BAC, Banpro, Lafise, BDF, Ficohsa
+let tipoServicioActual = 'LOCAL'; // 'LOCAL', 'LLEVAR', 'DELIVERY'
+let repartidoresPOS = [];
+let clientesRegistradosPOS = [];
 let ultimaVentaProcesada = null;
 
-// Cargar estado inicial del POS
 async function inicializarPOS() {
     const usuario = verificarAutenticacion(false);
     if (!usuario) return;
     inicializarHeaderComun();
 
-    // 1. Verificar caja activa (RF-16)
     await verificarCajaChicaActiva();
-
-    // 2. Cargar catálogo de productos y combos (RF-02)
     await cargarCatalogoPOS();
-
-    // 3. Cargar lista de clientes registrados (RF-13, RF-14)
     await cargarClientesPOS();
+    await cargarRepartidoresPOS();
 }
 
-// Verificar caja chica activa (RF-16)
 async function verificarCajaChicaActiva() {
     try {
         const res = await fetch('/api/caja/activa');
@@ -180,7 +167,6 @@ async function verificarCajaChicaActiva() {
                 badgeCaja.className = 'status-badge danger';
                 badgeCaja.innerText = 'Caja Cerrada';
             }
-            // Abrir modal obligatorio de apertura
             abrirModalAperturaCaja();
         }
     } catch (e) {
@@ -221,7 +207,7 @@ async function procesarAperturaCajaDesdePOS(e) {
     }
 }
 
-// Cargar catálogo de platillos y combos (RF-02)
+// Catálogo de Productos y Filtros
 async function cargarCatalogoPOS() {
     try {
         const res = await fetch('/api/productos');
@@ -238,7 +224,7 @@ function renderizarCatalogo(productos) {
     grid.innerHTML = '';
 
     if (productos.length === 0) {
-        grid.innerHTML = '<p style="grid-column: 1/-1; text-align:center; padding: 30px; color:#64748B;">No se encontraron platillos o combos en esta sección.</p>';
+        grid.innerHTML = '<p style="grid-column: 1/-1; text-align:center; padding: 30px; color:#64748B;">No se encontraron platillos en esta sección.</p>';
         return;
     }
 
@@ -262,10 +248,21 @@ function renderizarCatalogo(productos) {
     });
 }
 
-// Filtro por categorías y buscador dinámico (RF-02)
-function filtrarPorCategoria(idCategoria, btn) {
+function filtrarPorCategoria(idCategoria, btn, esDeBuscador = false) {
     document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
+    
+    if (btn) {
+        btn.classList.add('active');
+    } else {
+        const matchingBtn = document.querySelector(`.cat-btn[data-cat="${idCategoria}"]`);
+        if (matchingBtn) matchingBtn.classList.add('active');
+    }
+
+    // Si se presiona "Todos" directamente, limpiar el texto del buscador
+    if (idCategoria === 'todos' && !esDeBuscador) {
+        const searchInput = document.getElementById('txt-buscar-producto');
+        if (searchInput) searchInput.value = '';
+    }
 
     const txtBusqueda = (document.getElementById('txt-buscar-producto').value || '').toLowerCase();
 
@@ -274,26 +271,54 @@ function filtrarPorCategoria(idCategoria, btn) {
         filtrados = filtrados.filter(p => p.id_categoria === parseInt(idCategoria));
     }
     if (txtBusqueda) {
-        filtrados = filtrados.filter(p => p.nombre.toLowerCase().includes(txtBusqueda) || (p.descripcion && p.descripcion.toLowerCase().includes(txtBusqueda)));
+        filtrados = filtrados.filter(p => 
+            p.nombre.toLowerCase().includes(txtBusqueda) || 
+            (p.descripcion && p.descripcion.toLowerCase().includes(txtBusqueda))
+        );
     }
     renderizarCatalogo(filtrados);
+
+    // Reiniciar scroll vertical del catálogo hacia arriba
+    const gridWrap = document.querySelector('.product-grid-wrap');
+    if (gridWrap) gridWrap.scrollTop = 0;
 }
 
 function buscarPlatilloEnVivo() {
     const catActiva = document.querySelector('.cat-btn.active');
     const idCat = catActiva ? catActiva.getAttribute('data-cat') : 'todos';
-    filtrarPorCategoria(idCat, catActiva || document.querySelector('.cat-btn'));
+    filtrarPorCategoria(idCat, catActiva || document.querySelector('.cat-btn'), true);
 }
 
-// Cargar clientes registrados en el POS (RF-13, RF-14)
+// Modalidad de Servicio (Local, Llevar, Delivery)
+function cambiarTipoServicio(tipo, btn) {
+    tipoServicioActual = tipo;
+    document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+
+    const boxDel = document.getElementById('box-pos-delivery');
+    const rowEnvio = document.getElementById('row-envio-delivery');
+
+    if (tipo === 'DELIVERY') {
+        if (boxDel) boxDel.style.display = 'block';
+        if (rowEnvio) rowEnvio.style.display = 'flex';
+        alSeleccionarClientePOS();
+    } else {
+        if (boxDel) boxDel.style.display = 'none';
+        if (rowEnvio) rowEnvio.style.display = 'none';
+    }
+
+    actualizarCarritoUI();
+}
+
+// Clientes y Repartidores
 async function cargarClientesPOS() {
     try {
         const res = await fetch('/api/clientes');
-        const clientes = await res.json();
+        clientesRegistradosPOS = await res.json();
         const select = document.getElementById('select-cliente-pos');
         if (select) {
             select.innerHTML = '';
-            clientes.forEach(cl => {
+            clientesRegistradosPOS.forEach(cl => {
                 const opt = document.createElement('option');
                 opt.value = cl.id_cliente;
                 opt.innerText = `${cl.nombre} ${cl.telefono ? '(' + cl.telefono + ')' : ''} - [${cl.categoria}]`;
@@ -305,9 +330,37 @@ async function cargarClientesPOS() {
     }
 }
 
-// =========================================================
-// 4. GESTIÓN DEL CARRITO / COMANDA (RF-01, RF-03)
-// =========================================================
+async function cargarRepartidoresPOS() {
+    try {
+        const res = await fetch('/api/delivery/repartidores');
+        repartidoresPOS = await res.json();
+        const selRep = document.getElementById('select-pos-repartidor');
+        if (selRep) {
+            selRep.innerHTML = '<option value="">Por asignar</option>';
+            repartidoresPOS.forEach(r => {
+                const opt = document.createElement('option');
+                opt.value = r.nombre;
+                opt.innerText = `${r.nombre} (${r.vehiculo})`;
+                selRep.appendChild(opt);
+            });
+        }
+    } catch (e) {
+        console.error('Error cargando repartidores:', e);
+    }
+}
+
+function alSeleccionarClientePOS() {
+    const sel = document.getElementById('select-cliente-pos');
+    if (!sel) return;
+    const id = parseInt(sel.value);
+    const cl = clientesRegistradosPOS.find(c => c.id_cliente === id);
+    const txtDir = document.getElementById('txt-pos-direccion-delivery');
+    if (txtDir && cl && cl.direccion && cl.id_cliente !== 1) {
+        txtDir.value = cl.direccion;
+    }
+}
+
+// 4. CARRITO Y TOTALES
 function agregarAlCarrito(producto) {
     const index = comandaCarrito.findIndex(item => item.id_producto === producto.id_producto);
     if (index !== -1) {
@@ -316,7 +369,7 @@ function agregarAlCarrito(producto) {
         comandaCarrito.push({
             id_producto: producto.id_producto,
             nombre: producto.nombre,
-            precio: producto.precio,
+            precio: parseFloat(producto.precio),
             cantidad: 1
         });
     }
@@ -347,43 +400,72 @@ function actualizarCarritoUI() {
     tbody.innerHTML = '';
 
     let subtotal = 0;
-    comandaCarrito.forEach((item, idx) => {
-        const itemSubtotal = item.precio * item.cantidad;
-        subtotal += itemSubtotal;
 
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-            <td>
-                <div class="cart-item-title">${item.nombre}</div>
-                <small style="color:#64748B;">${formatoMoneda(item.precio)} c/u</small>
-            </td>
-            <td>
-                <div class="cart-qty-ctrl">
-                    <button class="qty-btn" onclick="modificarCantidad(${idx}, -1)">-</button>
-                    <span class="qty-display">${item.cantidad}</span>
-                    <button class="qty-btn" onclick="modificarCantidad(${idx}, 1)">+</button>
-                </div>
-            </td>
-            <td style="font-weight:700; color:#0F172A;">${formatoMoneda(itemSubtotal)}</td>
-            <td style="text-align:right;">
-                <button class="cart-del-btn" onclick="eliminarDelCarrito(${idx})" title="Eliminar">&times;</button>
-            </td>
+    if (comandaCarrito.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="4" class="cart-empty-placeholder">
+                    <div class="empty-icon-wrap">
+                        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#CBD5E1" stroke-width="1.5">
+                            <circle cx="9" cy="21" r="1"></circle>
+                            <circle cx="20" cy="21" r="1"></circle>
+                            <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+                        </svg>
+                    </div>
+                    <div class="empty-title">Comanda Vacía</div>
+                    <div class="empty-sub">Seleccione platillos o combos del menú</div>
+                </td>
+            </tr>
         `;
-        tbody.appendChild(tr);
-    });
+    } else {
+        comandaCarrito.forEach((item, idx) => {
+            const itemSubtotal = item.precio * item.cantidad;
+            subtotal += itemSubtotal;
 
-    // Cálculo automático de la venta (RF-03)
-    const impuesto = parseFloat((subtotal * 0.15).toFixed(2)); // IVA 15%
-    const total = parseFloat((subtotal + impuesto).toFixed(2));
+            const tr = document.createElement('tr');
+            tr.className = 'cart-item-row';
+            tr.innerHTML = `
+                <td>
+                    <div class="cart-item-title">${item.nombre}</div>
+                    <span class="cart-item-unit-price">${formatoMoneda(item.precio)} c/u</span>
+                </td>
+                <td style="text-align:center;">
+                    <div class="cart-qty-ctrl">
+                        <button type="button" class="qty-btn" onclick="modificarCantidad(${idx}, -1)" title="Reducir">-</button>
+                        <span class="qty-display">${item.cantidad}</span>
+                        <button type="button" class="qty-btn" onclick="modificarCantidad(${idx}, 1)" title="Aumentar">+</button>
+                    </div>
+                </td>
+                <td class="cart-item-price-col">${formatoMoneda(itemSubtotal)}</td>
+                <td style="text-align:right;">
+                    <button type="button" class="cart-del-btn" onclick="eliminarDelCarrito(${idx})" title="Quitar platillo">&times;</button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    // Envío si es delivery
+    let costoEnvio = 0;
+    if (tipoServicioActual === 'DELIVERY') {
+        const txtEnvio = document.getElementById('txt-pos-costo-delivery');
+        costoEnvio = parseFloat(txtEnvio ? txtEnvio.value : 0) || 0;
+    }
+
+    const impuesto = 0.00;
+    const total = parseFloat((subtotal + costoEnvio).toFixed(2));
 
     document.getElementById('val-subtotal').innerText = formatoMoneda(subtotal);
-    document.getElementById('val-impuesto').innerText = formatoMoneda(impuesto);
+    const elemEnvio = document.getElementById('val-envio');
+    if (elemEnvio) elemEnvio.innerText = formatoMoneda(costoEnvio);
+    const elemImp = document.getElementById('val-impuesto');
+    if (elemImp) elemImp.innerText = formatoMoneda(0);
     document.getElementById('val-total').innerText = formatoMoneda(total);
 
     calcularVueltoEnVivo();
 }
 
-// Métodos de pago permitidos: Efectivo y Transferencia (RF-06)
+// Métodos de Pago
 function seleccionarMetodoPago(metodo) {
     metodoPagoSeleccionado = metodo;
     const btnEf = document.getElementById('btn-metodo-efectivo');
@@ -391,13 +473,13 @@ function seleccionarMetodoPago(metodo) {
     const boxEf = document.getElementById('box-pago-efectivo');
     const boxTr = document.getElementById('box-pago-transferencia');
 
-    if (metodo === 1) { // Efectivo
+    if (metodo === 1) {
         btnEf.classList.add('active');
         btnTr.classList.remove('active');
         boxEf.style.display = 'flex';
         boxTr.style.display = 'none';
         calcularVueltoEnVivo();
-    } else { // Transferencia Bancaria
+    } else {
         btnTr.classList.add('active');
         btnEf.classList.remove('active');
         boxEf.style.display = 'none';
@@ -405,14 +487,12 @@ function seleccionarMetodoPago(metodo) {
     }
 }
 
-// Selección visual de banco de destino (RF-07)
 function seleccionarBanco(banco, elem) {
     bancoSeleccionado = banco;
     document.querySelectorAll('.bank-card-btn').forEach(el => el.classList.remove('active'));
     elem.classList.add('active');
 }
 
-// Cálculo en vivo del vuelto (RF-03)
 function calcularVueltoEnVivo() {
     const totalTxt = document.getElementById('val-total').innerText.replace('C$', '').trim();
     const total = parseFloat(totalTxt) || 0;
@@ -427,9 +507,7 @@ function calcularVueltoEnVivo() {
     if (elemVuelto) elemVuelto.innerText = formatoMoneda(vuelto);
 }
 
-// =========================================================
-// 5. PROCESAMIENTO DE FACTURACIÓN Y EMISIÓN DE COMPROBANTES (RF-01 a RF-09)
-// =========================================================
+// 5. PROCESAMIENTO DE FACTURACIÓN
 async function procesarFacturacion() {
     if (comandaCarrito.length === 0) {
         mostrarToast('Agregue platillos o combos a la orden antes de facturar.', 'warning');
@@ -447,29 +525,47 @@ async function procesarFacturacion() {
     const usuario = obtenerUsuarioActual();
     const selectCliente = document.getElementById('select-cliente-pos');
     const idCliente = selectCliente ? parseInt(selectCliente.value) : 1;
-    const clienteNombre = selectCliente ? selectCliente.options[selectCliente.selectedIndex].text.split(' - ')[0] : 'Consumidor Final';
+    const clSeleccionado = clientesRegistradosPOS.find(c => c.id_cliente === idCliente);
+    const clienteNombre = clSeleccionado ? clSeleccionado.nombre : 'Consumidor Final';
+    const clienteTelefono = clSeleccionado ? clSeleccionado.telefono : '';
 
     let montoRecibido = total;
     let banco = null;
     let referencia = null;
 
-    if (metodoPagoSeleccionado === 1) { // Efectivo
+    if (metodoPagoSeleccionado === 1) {
         const txtRecibido = document.getElementById('txt-monto-recibido').value;
         montoRecibido = parseFloat(txtRecibido);
         if (isNaN(montoRecibido) || montoRecibido < total) {
-            alert(`El efectivo recibido (${formatoMoneda(montoRecibido || 0)}) no cubre el total de la orden (${formatoMoneda(total)}).`);
+            alert(`El efectivo recibido (${formatoMoneda(montoRecibido || 0)}) no cubre el total (${formatoMoneda(total)}).`);
             return;
         }
-    } else { // Transferencia Bancaria (RF-07, RF-08)
+    } else {
         banco = bancoSeleccionado;
         const refInput = document.getElementById('txt-referencia-transferencia');
         referencia = refInput ? refInput.value.trim() : '';
         if (!referencia) {
-            alert('Debe ingresar el número de referencia o confirmación emitido por la app bancaria (' + banco + ').');
+            alert('Debe ingresar el número de referencia bancaria emitida por ' + banco + '.');
             if (refInput) refInput.focus();
             return;
         }
         montoRecibido = total;
+    }
+
+    // Datos de delivery si aplica
+    let costoEnvio = 0;
+    let repartidor = null;
+    let direccionEntrega = null;
+
+    if (tipoServicioActual === 'DELIVERY') {
+        costoEnvio = parseFloat(document.getElementById('txt-pos-costo-delivery').value) || 0;
+        repartidor = document.getElementById('select-pos-repartidor').value || null;
+        direccionEntrega = document.getElementById('txt-pos-direccion-delivery').value.trim();
+        if (!direccionEntrega) {
+            alert('Por favor ingrese la dirección exacta de entrega en Sierra Maestra o zonas cercanas.');
+            document.getElementById('txt-pos-direccion-delivery').focus();
+            return;
+        }
     }
 
     const payload = {
@@ -480,8 +576,13 @@ async function procesarFacturacion() {
         monto_recibido: montoRecibido,
         id_cliente: idCliente,
         cliente_nombre: clienteNombre,
+        telefono_cliente: clienteTelefono,
         banco: banco,
-        referencia_transferencia: referencia
+        referencia_transferencia: referencia,
+        tipo_entrega: tipoServicioActual,
+        costo_delivery: costoEnvio,
+        repartidor: repartidor,
+        direccion_entrega: direccionEntrega
     };
 
     try {
@@ -494,17 +595,14 @@ async function procesarFacturacion() {
 
         if (data.success) {
             ultimaVentaProcesada = data;
-            mostrarToast('¡Venta realizada y comandada con éxito!', 'success');
+            mostrarToast('Venta procesada y factura generada con éxito.');
 
-            // Abrir Modal de Comprobantes (Físico ESC/POS y Digital WhatsApp)
             mostrarModalComprobante(data);
 
-            // Limpiar carrito y campos
             vaciarCarrito();
             if (document.getElementById('txt-monto-recibido')) document.getElementById('txt-monto-recibido').value = '';
             if (document.getElementById('txt-referencia-transferencia')) document.getElementById('txt-referencia-transferencia').value = '';
 
-            // Refrescar alertas de stock
             consultarAlertasStockHeader();
         } else {
             alert('Error al facturar: ' + data.error);
@@ -515,29 +613,109 @@ async function procesarFacturacion() {
     }
 }
 
-// Mostrar modal de comprobantes (RF-04, RF-05)
+// Modal de Factura Comercial y Ticket con QR
 function mostrarModalComprobante(data) {
     const modal = document.getElementById('modal-comprobante-exito');
     if (!modal) return;
 
-    // Llenar vista previa del ticket térmico
+    const v = data.venta;
+
+    // 1. Factura Comercial Formal
+    document.getElementById('fac-numero').innerText = v.numero_factura;
+    document.getElementById('fac-fecha').innerText = v.fecha;
+    document.getElementById('fac-cliente-nombre').innerText = v.cliente_nombre;
+    document.getElementById('fac-cliente-telefono').innerText = v.cliente_telefono || '--';
+    document.getElementById('fac-tipo-entrega').innerText = v.tipo_entrega === 'DELIVERY' ? 'A Domicilio' : (v.tipo_entrega === 'LLEVAR' ? 'Para Llevar' : 'En Local');
+    document.getElementById('fac-direccion').innerText = v.direccion_entrega || 'En Local / Mostrador';
+
+    const tbody = document.getElementById('fac-items-body');
+    tbody.innerHTML = '';
+    (v.items || []).forEach(it => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td style="text-align:center;">${it.cantidad}</td>
+            <td><strong>${it.nombre}</strong></td>
+            <td style="text-align:right;">C$ ${parseFloat(it.precio).toFixed(2)}</td>
+            <td style="text-align:right; font-weight:700;">C$ ${(it.precio * it.cantidad).toFixed(2)}</td>
+        `;
+        tbody.appendChild(tr);
+    });
+
+    document.getElementById('fac-subtotal').innerText = formatoMoneda(v.subtotal);
+    const rowDel = document.getElementById('fac-row-delivery');
+    if (v.costo_delivery > 0) {
+        rowDel.style.display = 'flex';
+        document.getElementById('fac-delivery').innerText = formatoMoneda(v.costo_delivery);
+    } else {
+        rowDel.style.display = 'none';
+    }
+    document.getElementById('fac-iva').innerText = formatoMoneda(v.impuesto);
+    document.getElementById('fac-total').innerText = formatoMoneda(v.total);
+
+    const pagoTxt = v.metodo_pago + (v.referencia ? ' (Ref: ' + v.referencia + ')' : '');
+    document.getElementById('fac-metodo-info').innerText = `Pago: ${pagoTxt}`;
+
+    // Generar Código QR Dinámico Nítido (Universal para Celulares)
+    const qrWrap = document.getElementById('factura-qr-code');
+    qrWrap.innerHTML = '';
+    const qrTexto = data.whatsapp_link || data.qr_payload || `https://wa.me/?text=${encodeURIComponent(`*EL GUSTAZO*\nFactura: ${v.numero_factura}\nTotal: C$ ${parseFloat(v.total).toFixed(2)}\nCliente: ${v.cliente_nombre}`)}`;
+
+    if (window.QRCode) {
+        new QRCode(qrWrap, {
+            text: qrTexto,
+            width: 150,
+            height: 150,
+            margin: 2
+        });
+    }
+
+    const lnkProbar = document.getElementById('lnk-probar-qr');
+    if (lnkProbar) {
+        lnkProbar.href = qrTexto;
+    }
+
+    // 2. Ticket Térmico Portátil
     const elemTicket = document.getElementById('preview-ticket-escpos');
     if (elemTicket) elemTicket.innerText = data.ticket_esc_pos;
 
-    // Configurar botón de WhatsApp
+    // 3. WhatsApp Link
     const btnWa = document.getElementById('btn-enviar-whatsapp');
     if (btnWa) {
         btnWa.href = data.whatsapp_link;
         btnWa.target = '_blank';
     }
 
+    cambiarVistaComprobante('factura');
     modal.classList.add('open');
 }
 
-// Imprimir comprobante térmico ESC/POS mediante diálogo de impresora portátil (RF-04)
+function cambiarVistaComprobante(vista) {
+    const tabFac = document.getElementById('tab-btn-factura');
+    const tabTic = document.getElementById('tab-btn-ticket');
+    const secFac = document.getElementById('vista-factura-comercial');
+    const secTic = document.getElementById('vista-ticket-termico');
+
+    if (vista === 'factura') {
+        tabFac.classList.add('active');
+        tabTic.classList.remove('active');
+        secFac.style.display = 'block';
+        secTic.style.display = 'none';
+    } else {
+        tabTic.classList.add('active');
+        tabFac.classList.remove('active');
+        secTic.style.display = 'block';
+        secFac.style.display = 'none';
+    }
+}
+
+function imprimirFacturaPDF() {
+    cambiarVistaComprobante('factura');
+    window.print();
+}
+
 function imprimirTicketTermico() {
     if (!ultimaVentaProcesada) return;
-
+    cambiarVistaComprobante('ticket');
     let printArea = document.getElementById('printable-thermal-ticket');
     if (!printArea) {
         printArea = document.createElement('div');
@@ -548,13 +726,12 @@ function imprimirTicketTermico() {
     window.print();
 }
 
-// Copiar texto para WhatsApp al portapapeles (RF-05)
 function copiarResumenWhatsApp() {
     if (!ultimaVentaProcesada) return;
     navigator.clipboard.writeText(ultimaVentaProcesada.whatsapp_mensaje).then(() => {
         mostrarToast('Resumen de factura copiado al portapapeles.');
     }).catch(() => {
-        alert('No se pudo copiar automáticamente. Puedes seleccionar el texto.');
+        alert('No se pudo copiar automáticamente.');
     });
 }
 
@@ -563,7 +740,7 @@ function cerrarModalComprobante() {
     if (modal) modal.classList.remove('open');
 }
 
-// Modal para agregar rápido un cliente desde el POS
+// Modal Nuevo Cliente
 function abrirModalNuevoCliente() {
     const modal = document.getElementById('modal-nuevo-cliente');
     if (modal) modal.classList.add('open');
@@ -576,9 +753,9 @@ function cerrarModalNuevoCliente() {
 
 async function guardarClienteDesdePOS(e) {
     e.preventDefault();
-    const nombre = document.getElementById('txt-nc-nombre').value;
-    const telefono = document.getElementById('txt-nc-telefono').value;
-    const direccion = document.getElementById('txt-nc-direccion').value;
+    const nombre = document.getElementById('txt-nc-nombre').value.trim();
+    const telefono = document.getElementById('txt-nc-telefono').value.trim();
+    const direccion = document.getElementById('txt-nc-direccion').value.trim();
     const categoria = document.getElementById('txt-nc-categoria').value;
 
     try {
@@ -592,9 +769,9 @@ async function guardarClienteDesdePOS(e) {
             mostrarToast('Cliente guardado y seleccionado.');
             cerrarModalNuevoCliente();
             await cargarClientesPOS();
-            // Seleccionar automáticamente al nuevo cliente
             const select = document.getElementById('select-cliente-pos');
             if (select) select.value = data.id_cliente;
+            alSeleccionarClientePOS();
         } else {
             alert('Error: ' + data.error);
         }

@@ -8,6 +8,7 @@ const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
 app.use('/css', express.static(path.join(__dirname, 'css')));
+app.use('/js', express.static(path.join(__dirname, 'public', 'js')));
 app.use('/js', express.static(path.join(__dirname, 'js')));
 app.use('/img', express.static(path.join(__dirname, 'public', 'img')));
 app.use(express.static(path.join(__dirname, 'public')));
@@ -58,21 +59,53 @@ function ejecutarRespaldoDiarioAutomatico() {
 // ==========================================
 // MÓDULO 6 & SEGURIDAD: AUTENTICACIÓN Y ROLES (RF-21, RNF-04)
 // ==========================================
+// Control en memoria para protección contra ataques de fuerza bruta y robos de acceso
+const loginAttemptsMap = new Map();
+
 app.post('/api/login', (req, res) => {
     const { usuario, password } = req.body;
     if (!usuario || !password) {
         return res.status(400).json({ error: 'Debe ingresar usuario y contraseña.' });
     }
 
+    const cleanUser = usuario.trim().toLowerCase();
+    const clientIp = req.ip || req.connection.remoteAddress || 'localhost';
+    const attemptKey = `${clientIp}_${cleanUser}`;
+    const now = Date.now();
+
+    const attemptInfo = loginAttemptsMap.get(attemptKey);
+    if (attemptInfo && attemptInfo.lockUntil && now < attemptInfo.lockUntil) {
+        const segRestantes = Math.ceil((attemptInfo.lockUntil - now) / 1000);
+        return res.status(429).json({
+            error: `Acceso bloqueado por seguridad ante múltiples intentos fallidos. Espere ${segRestantes} segundos para reintentar.`
+        });
+    }
+
     const query = `
         SELECT u.id_usuario, u.nombre, u.usuario, u.id_rol, r.nombre AS rol, u.estado
         FROM usuarios u
         JOIN roles r ON u.id_rol = r.id_rol
-        WHERE LOWER(u.usuario) = LOWER(?) AND u.password = ? AND u.estado = 1
+        WHERE LOWER(u.usuario) = ? AND u.password = ? AND u.estado = 1
     `;
-    db.get(query, [usuario.trim(), password], (err, row) => {
+    db.get(query, [cleanUser, password], (err, row) => {
         if (err) return res.status(500).json({ error: err.message });
-        if (!row) return res.status(401).json({ error: 'Credenciales inválidas o usuario inactivo.' });
+        if (!row) {
+            const currentAttempts = (attemptInfo ? attemptInfo.attempts : 0) + 1;
+            let lockUntil = null;
+            if (currentAttempts >= 3) {
+                lockUntil = now + 30000; // Bloqueo de 30 segundos
+            }
+            loginAttemptsMap.set(attemptKey, { attempts: currentAttempts >= 3 ? 0 : currentAttempts, lockUntil });
+
+            const msg = lockUntil
+                ? 'Demasiados intentos fallidos. Acceso bloqueado preventivamente durante 30 segundos para evitar robo de sesión.'
+                : `Credenciales incorrectas (Intento ${currentAttempts} de 3). Verifique su usuario, contraseña y caracteres especiales.`;
+            return res.status(401).json({ error: msg, intentos_fallidos: currentAttempts });
+        }
+
+        // Login exitoso: limpiar historial de intentos
+        loginAttemptsMap.delete(attemptKey);
+
         res.json({
             success: true,
             id_usuario: row.id_usuario,
@@ -102,12 +135,22 @@ app.post('/api/usuarios', (req, res) => {
     if (!nombre || !usuario || !password || !id_rol) {
         return res.status(400).json({ error: 'Todos los campos son requeridos.' });
     }
+
+    // Validación de seguridad de contraseña (mínimo 8 caracteres, números y caracteres especiales)
+    const tieneEspecial = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+    const tieneNumero = /\d/.test(password);
+    if (password.length < 8 || !tieneNumero || !tieneEspecial) {
+        return res.status(400).json({
+            error: 'Por seguridad para evitar robos de cuenta, la contraseña debe tener al menos 8 caracteres, incluir números y al menos un carácter especial (*, #, @, etc.).'
+        });
+    }
+
     db.run(
         `INSERT INTO usuarios (nombre, usuario, password, id_rol, estado) VALUES (?, ?, ?, ?, 1)`,
         [nombre, usuario.trim(), password, id_rol],
         function(err) {
             if (err) return res.status(500).json({ error: 'El nombre de usuario ya existe o hubo un error: ' + err.message });
-            res.json({ success: true, id_usuario: this.lastID, mensaje: 'Usuario creado exitosamente.' });
+            res.json({ success: true, id_usuario: this.lastID, mensaje: 'Usuario creado exitosamente con credenciales seguras.' });
         }
     );
 });
@@ -409,6 +452,36 @@ app.post('/api/clientes', (req, res) => {
     );
 });
 
+// Actualizar datos de un cliente
+app.put('/api/clientes/:id', (req, res) => {
+    const { id } = req.params;
+    const { nombre, telefono, direccion, categoria } = req.body;
+
+    if (!nombre || !nombre.trim()) {
+        return res.status(400).json({ error: 'El nombre del cliente es obligatorio.' });
+    }
+
+    db.run(
+        `UPDATE clientes SET nombre = ?, telefono = ?, direccion = ?, categoria = ? WHERE id_cliente = ?`,
+        [nombre.trim(), telefono ? telefono.trim() : '', direccion ? direccion.trim() : '', categoria || 'Ocasional', id],
+        function(err) {
+            if (err) return res.status(500).json({ error: err.message });
+            if (this.changes === 0) return res.status(404).json({ error: 'Cliente no encontrado.' });
+            res.json({
+                success: true,
+                mensaje: 'Cliente actualizado exitosamente.',
+                cliente: {
+                    id_cliente: parseInt(id),
+                    nombre: nombre.trim(),
+                    telefono: telefono ? telefono.trim() : '',
+                    direccion: direccion ? direccion.trim() : '',
+                    categoria: categoria || 'Ocasional'
+                }
+            });
+        }
+    );
+});
+
 // Historial y perfil de consumo de un cliente (RF-15)
 app.get('/api/clientes/:id/historial', (req, res) => {
     const { id } = req.params;
@@ -455,7 +528,7 @@ app.get('/api/clientes/:id/historial', (req, res) => {
 // ==========================================
 
 // Consulta de caja actualmente abierta
-app.get('/api/caja/activa', (req, res) => {
+app.get(['/api/caja/activa', '/api/caja/estado'], (req, res) => {
     const query = `
         SELECT c.*, u.nombre AS cajero_nombre
         FROM cajas c
@@ -658,47 +731,56 @@ app.get('/api/caja/historial', (req, res) => {
 });
 
 // ==========================================
-// MÓDULO 1 & 2: PROCESAMIENTO DE VENTAS, PAGOS MULTICANAL Y BOM
-// (RF-01, RF-02, RF-03, RF-04, RF-05, RF-06, RF-07, RF-08, RF-09)
+// MÓDULO: PROCESAMIENTO DE VENTAS, FACTURACIÓN Y BOM
 // ==========================================
 app.post('/api/ventas', (req, res) => {
-    const { items, id_metodo_pago, id_usuario, id_caja, monto_recibido, id_cliente, cliente_nombre, banco, referencia_transferencia } = req.body;
+    const {
+        items, id_metodo_pago, id_usuario, id_caja, monto_recibido,
+        id_cliente, cliente_nombre, banco, referencia_transferencia,
+        tipo_entrega, costo_delivery, repartidor, direccion_entrega,
+        origen_pedido, telefono_cliente, notas_delivery
+    } = req.body;
 
     if (!items || !Array.isArray(items) || items.length === 0) {
         return res.status(400).json({ error: 'El carrito de ventas no contiene productos.' });
     }
 
-    // RF-06: Métodos de pago permitidos estrictamente (1: Efectivo, 2: Transferencia)
     const metodoPago = parseInt(id_metodo_pago);
     if (metodoPago !== 1 && metodoPago !== 2) {
         return res.status(400).json({ error: 'Método de pago inválido. Solo se permite Efectivo o Transferencia Bancaria.' });
     }
 
-    // RF-07 & RF-08: Si es transferencia, banco y referencia obligatorios
+    const refTransf = (referencia_transferencia || req.body.referencia_bancaria || req.body.referencia || '').trim();
+
     if (metodoPago === 2) {
         const bancosPermitidos = ['BAC', 'Banpro', 'Lafise', 'BDF', 'Ficohsa'];
         if (!banco || !bancosPermitidos.includes(banco)) {
             return res.status(400).json({ error: 'Debe seleccionar un banco de destino válido: ' + bancosPermitidos.join(', ') });
         }
-        if (!referencia_transferencia || referencia_transferencia.trim().length === 0) {
+        if (!refTransf || refTransf.length === 0) {
             return res.status(400).json({ error: 'El código de confirmación o referencia bancaria es obligatorio.' });
         }
     }
 
-    // RF-16: Validar caja chica activa
-    db.get(`SELECT id_caja FROM cajas WHERE id_caja = ? AND estado = 'ABIERTA'`, [id_caja], (errCaja, cajaActiva) => {
+    const checkCajaSql = id_caja
+        ? `SELECT id_caja FROM cajas WHERE id_caja = ? AND estado = 'ABIERTA'`
+        : `SELECT id_caja FROM cajas WHERE estado = 'ABIERTA' ORDER BY id_caja DESC LIMIT 1`;
+    const checkCajaParams = id_caja ? [id_caja] : [];
+
+    db.get(checkCajaSql, checkCajaParams, (errCaja, cajaActiva) => {
         if (errCaja || !cajaActiva) {
             return res.status(400).json({ error: 'No hay un turno de caja chica abierto. Debe abrir caja con fondo inicial antes de facturar.' });
         }
 
-        // RF-03: Cálculo automático
-        const subtotal = items.reduce((acc, item) => acc + (parseFloat(item.precio) * parseInt(item.cantidad)), 0);
-        const impuesto = parseFloat((subtotal * 0.15).toFixed(2)); // IVA 15%
-        const total = parseFloat((subtotal + impuesto).toFixed(2));
+        const activeCajaId = cajaActiva.id_caja;
+        const subtotal = items.reduce((acc, item) => acc + (parseFloat(item.precio || item.precio_unitario || 0) * parseInt(item.cantidad || 1)), 0);
+        const envio = parseFloat(costo_delivery) || 0;
+        const impuesto = 0.00; // Sin IVA
+        const total = parseFloat((subtotal + envio).toFixed(2));
 
         let dineroRecibido = parseFloat(monto_recibido);
         if (metodoPago === 2) {
-            dineroRecibido = total; // En transferencia el monto recibido coincide con el total
+            dineroRecibido = total;
         } else if (isNaN(dineroRecibido) || dineroRecibido < total) {
             return res.status(400).json({ error: `El monto recibido (C$ ${dineroRecibido || 0}) no puede ser menor al total (C$ ${total}).` });
         }
@@ -711,19 +793,22 @@ app.post('/api/ventas', (req, res) => {
 
             const insertVentaQuery = `
                 INSERT INTO ventas (
-                    numero_factura, subtotal, impuesto, total, monto_recibido, vuelto,
+                    numero_factura, subtotal, costo_delivery, impuesto, total, monto_recibido, vuelto,
                     id_metodo_pago, id_usuario, id_caja, id_cliente, cliente_nombre,
+                    telefono_cliente, tipo_entrega, origen_pedido, direccion_entrega, repartidor, notas_delivery,
                     banco, referencia_transferencia, tipo_comprobante, estado
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'TICKET', 'COMPLETADA')
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'TICKET', 'COMPLETADA')
             `;
 
             db.run(
                 insertVentaQuery,
                 [
-                    numeroFactura, subtotal, impuesto, total, dineroRecibido, vuelto,
-                    metodoPago, id_usuario || 1, id_caja, id_cliente || 1,
-                    cliente_nombre || 'Consumidor Final', banco || null,
-                    referencia_transferencia || null
+                    numeroFactura, subtotal, envio, impuesto, total, dineroRecibido, vuelto,
+                    metodoPago, id_usuario || 1, activeCajaId, id_cliente || 1,
+                    cliente_nombre || 'Consumidor Final', telefono_cliente || '',
+                    tipo_entrega || 'LOCAL', origen_pedido || 'MOSTRADOR',
+                    direccion_entrega || '', repartidor || '', notas_delivery || '',
+                    banco || null, refTransf || null
                 ],
                 function(errVenta) {
                     if (errVenta) {
@@ -734,13 +819,11 @@ app.post('/api/ventas', (req, res) => {
                     const id_venta = this.lastID;
                     const detalleStmt = db.prepare(`INSERT INTO venta_detalle (id_venta, id_producto, cantidad, precio_unitario, subtotal) VALUES (?, ?, ?, ?, ?)`);
 
-                    // 2. Registrar Detalle e Insumos por Receta (BOM)
                     items.forEach(item => {
-                        const itemCant = parseInt(item.cantidad);
-                        const itemPrecio = parseFloat(item.precio);
+                        const itemCant = parseInt(item.cantidad || 1);
+                        const itemPrecio = parseFloat(item.precio || item.precio_unitario || 0);
                         detalleStmt.run([id_venta, item.id_producto, itemCant, itemPrecio, itemPrecio * itemCant]);
 
-                        // Descuento automático por receta fija (RF-09)
                         const queryReceta = `
                             SELECT rd.id_insumo, rd.cantidad
                             FROM recetas r
@@ -752,10 +835,8 @@ app.post('/api/ventas', (req, res) => {
                             if (!errR && ingredientes && ingredientes.length > 0) {
                                 ingredientes.forEach(ing => {
                                     const descuento = ing.cantidad * itemCant;
-                                    // Descontar stock
                                     db.run(`UPDATE insumos SET stock_actual = MAX(0, stock_actual - ?), fecha_actualizacion = CURRENT_TIMESTAMP WHERE id_insumo = ?`, [descuento, ing.id_insumo]);
 
-                                    // Registrar movimiento en auditoría de inventario
                                     db.run(
                                         `INSERT INTO movimientos_inventario (id_insumo, tipo, cantidad, motivo, id_venta, id_usuario) VALUES (?, 'SALIDA', ?, ?, ?, ?)`,
                                         [ing.id_insumo, descuento, `Venta Comanda #${numeroFactura}`, id_venta, id_usuario || 1]
@@ -772,59 +853,109 @@ app.post('/api/ventas', (req, res) => {
                             return res.status(500).json({ error: 'Error al finalizar transacción de venta.' });
                         }
 
-                        // Consultar datos del cliente para el comprobante
-                        db.get(`SELECT telefono, nombre FROM clientes WHERE id_cliente = ?`, [id_cliente || 1], (errCl, clienteRow) => {
-                            const clienteTel = clienteRow ? clienteRow.telefono : '';
-                            const clienteNom = clienteRow ? clienteRow.nombre : (cliente_nombre || 'Consumidor Final');
+                        db.get(`SELECT telefono, nombre, direccion FROM clientes WHERE id_cliente = ?`, [id_cliente || 1], (errCl, clienteRow) => {
+                            const clienteTel = telefono_cliente || (clienteRow ? clienteRow.telefono : '');
+                            const clienteNom = cliente_nombre || (clienteRow ? clienteRow.nombre : 'Consumidor Final');
+                            const dirEntrega = direccion_entrega || (clienteRow ? clienteRow.direccion : '');
 
-                            // RF-04: Formato de Comprobante Físico Térmico ESC/POS
-                            const ticketEscPos = generarTicketEscPos({
+                            const ticketData = {
                                 numeroFactura,
                                 fecha: new Date().toLocaleString('es-NI'),
                                 cliente: clienteNom,
+                                telefono: clienteTel,
+                                direccion: dirEntrega,
+                                tipoEntrega: tipo_entrega || 'LOCAL',
+                                repartidor: repartidor || '',
                                 items,
                                 subtotal,
+                                envio,
                                 impuesto,
                                 total,
                                 metodoPago: metodoPago === 1 ? 'EFECTIVO' : `TRANSFERENCIA ${banco}`,
                                 referencia: referencia_transferencia,
                                 recibido: dineroRecibido,
                                 vuelto
-                            });
+                            };
 
-                            // RF-05: Formato de Comprobante Digital WhatsApp
-                            const whatsappMsg = generarResumenWhatsApp({
-                                numeroFactura,
-                                fecha: new Date().toLocaleString('es-NI'),
-                                cliente: clienteNom,
-                                items,
-                                subtotal,
-                                impuesto,
-                                total,
-                                metodoPago: metodoPago === 1 ? 'Efectivo' : `Transferencia ${banco}`,
-                                referencia: referencia_transferencia,
-                                vuelto
-                            });
+                            const ticketEscPos = generarTicketEscPos(ticketData);
+                            const whatsappMsg = generarResumenWhatsApp(ticketData);
+
+                            let telClean = (clienteTel || '').replace(/\D/g, '');
+                            if (telClean.length === 8) {
+                                telClean = '505' + telClean;
+                            }
+                            const whatsappLink = telClean
+                                ? `https://wa.me/${telClean}?text=${encodeURIComponent(whatsappMsg)}`
+                                : `https://wa.me/?text=${encodeURIComponent(whatsappMsg)}`;
+
+                            // El código QR codifica el enlace universal de WhatsApp para que al escanearlo con cualquier teléfono abra el comprobante de inmediato
+                            const qrPayload = whatsappLink;
+                            const digitalLink = `/comprobante.html?fac=${numeroFactura}`;
+
+                            // Sincronización automática con Módulo de Delivery (evitar retrabajo)
+                            let id_pedido_delivery = null;
+                            let numero_pedido_delivery = null;
+
+                            if (tipo_entrega === 'DELIVERY') {
+                                numero_pedido_delivery = 'DEL-' + numeroFactura.replace('FAC-', '');
+                                const estadoDelivery = repartidor ? 'EN_CAMINO' : 'EN_PREPARACION';
+
+                                db.run(`
+                                    INSERT INTO pedidos_delivery (
+                                        numero_pedido, id_cliente, cliente_nombre, telefono, direccion,
+                                        origen, estado, repartidor, id_repartidor, notas, costo_delivery,
+                                        subtotal, impuesto, total, id_metodo_pago, banco, referencia_transferencia,
+                                        id_caja, id_usuario, id_venta
+                                    ) VALUES (?, ?, ?, ?, ?, 'POS', ?, ?, null, ?, ?, ?, 0, ?, ?, ?, ?, ?, ?, ?)
+                                `, [
+                                    numero_pedido_delivery, id_cliente || null, clienteNom,
+                                    clienteTel, dirEntrega, estadoDelivery, repartidor || null,
+                                    notas_delivery || '', envio, subtotal, total, metodoPago,
+                                    banco || null, refTransf || null, activeCajaId, id_usuario || 1, id_venta
+                                ], function(errDel) {
+                                    if (!errDel && this.lastID) {
+                                        id_pedido_delivery = this.lastID;
+                                        const delStmt = db.prepare(`INSERT INTO pedido_delivery_detalle (id_pedido, id_producto, cantidad, precio_unitario, subtotal) VALUES (?, ?, ?, ?, ?)`);
+                                        items.forEach(it => {
+                                            const itCant = parseInt(it.cantidad || 1);
+                                            const itPrec = parseFloat(it.precio || it.precio_unitario || 0);
+                                            delStmt.run([id_pedido_delivery, it.id_producto, itCant, itPrec, itCant * itPrec]);
+                                        });
+                                        delStmt.finalize();
+                                    }
+                                });
+                            }
 
                             res.json({
                                 success: true,
-                                mensaje: '¡Venta procesada y descontada del inventario exitosamente!',
+                                mensaje: 'Venta procesada e inventario actualizado exitosamente.',
                                 venta: {
                                     id_venta,
                                     numero_factura: numeroFactura,
+                                    fecha: ticketData.fecha,
                                     subtotal,
+                                    costo_delivery: envio,
                                     impuesto,
                                     total,
                                     monto_recibido: dineroRecibido,
                                     vuelto,
                                     metodo_pago: metodoPago === 1 ? 'Efectivo' : `Transferencia ${banco}`,
+                                    banco: banco,
                                     referencia: referencia_transferencia,
+                                    tipo_entrega: tipo_entrega || 'LOCAL',
+                                    repartidor: repartidor || '',
                                     cliente_nombre: clienteNom,
-                                    cliente_telefono: clienteTel
+                                    cliente_telefono: clienteTel,
+                                    direccion_entrega: dirEntrega,
+                                    items: items
                                 },
+                                es_delivery: tipo_entrega === 'DELIVERY',
+                                numero_pedido_delivery: numero_pedido_delivery,
+                                qr_payload: qrPayload,
+                                digital_link: digitalLink,
                                 ticket_esc_pos: ticketEscPos,
                                 whatsapp_mensaje: whatsappMsg,
-                                whatsapp_link: `https://wa.me/${(clienteTel || '').replace(/\D/g, '')}?text=${encodeURIComponent(whatsappMsg)}`
+                                whatsapp_link: whatsappLink
                             });
                         });
                     });
@@ -834,11 +965,386 @@ app.post('/api/ventas', (req, res) => {
     });
 });
 
-// Generador de formato de Ticket Térmico Portátil ESC/POS (RF-04)
+// Conteo de pedidos activos de delivery para notificaciones en vivo
+app.get('/api/delivery/conteo-activos', (req, res) => {
+    db.get(`
+        SELECT COUNT(*) AS total_activos,
+               COALESCE(SUM(CASE WHEN estado = 'PENDIENTE' THEN 1 ELSE 0 END), 0) AS pendientes,
+               COALESCE(SUM(CASE WHEN estado = 'EN_PREPARACION' THEN 1 ELSE 0 END), 0) AS preparacion,
+               COALESCE(SUM(CASE WHEN estado = 'EN_CAMINO' THEN 1 ELSE 0 END), 0) AS en_camino
+        FROM pedidos_delivery
+        WHERE estado IN ('PENDIENTE', 'EN_PREPARACION', 'LISTO', 'EN_CAMINO')
+    `, [], (err, row) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json(row || { total_activos: 0, pendientes: 0, preparacion: 0, en_camino: 0 });
+    });
+});
+
+// 1. Listado de pedidos delivery
+app.get('/api/delivery/pedidos', (req, res) => {
+    const { estado } = req.query;
+    let query = `
+        SELECT p.*, c.nombre AS cliente_registrado_nombre, c.categoria AS cliente_categoria
+        FROM pedidos_delivery p
+        LEFT JOIN clientes c ON p.id_cliente = c.id_cliente
+    `;
+    let params = [];
+    if (estado && estado !== 'TODOS') {
+        query += ` WHERE p.estado = ?`;
+        params.push(estado);
+    }
+    query += ` ORDER BY p.id_pedido DESC LIMIT 100`;
+
+    db.all(query, params, (err, pedidos) => {
+        if (err) return res.status(500).json({ error: err.message });
+        if (!pedidos || pedidos.length === 0) return res.json([]);
+
+        const ids = pedidos.map(p => p.id_pedido);
+        const placeholders = ids.map(() => '?').join(',');
+        const itemsQuery = `
+            SELECT d.*, pr.nombre AS producto_nombre, pr.precio
+            FROM pedido_delivery_detalle d
+            JOIN productos pr ON d.id_producto = pr.id_producto
+            WHERE d.id_pedido IN (${placeholders})
+        `;
+
+        db.all(itemsQuery, ids, (errItems, items) => {
+            if (errItems) return res.status(500).json({ error: errItems.message });
+            
+            const pedidosConItems = pedidos.map(p => ({
+                ...p,
+                items: (items || []).filter(it => it.id_pedido === p.id_pedido)
+            }));
+            res.json(pedidosConItems);
+        });
+    });
+});
+
+// 2. Registro de nuevo pedido delivery (WhatsApp o Llamada)
+app.post('/api/delivery/pedidos', (req, res) => {
+    const {
+        id_cliente, cliente_nombre, telefono, direccion, origen,
+        repartidor, id_repartidor, notas, costo_delivery, items,
+        id_metodo_pago, banco, referencia_transferencia, id_caja, id_usuario
+    } = req.body;
+
+    if (!items || !Array.isArray(items) || items.length === 0) {
+        return res.status(400).json({ error: 'El pedido debe incluir al menos un platillo o combo.' });
+    }
+    if (!cliente_nombre || !direccion) {
+        return res.status(400).json({ error: 'El nombre del cliente y la dirección exacta en Sierra Maestra son requeridos.' });
+    }
+
+    const subtotal = items.reduce((acc, it) => acc + (parseFloat(it.precio || it.precio_unitario || 0) * parseInt(it.cantidad || 1)), 0);
+    const envio = parseFloat(costo_delivery) || 0;
+    const impuesto = 0.00; // Sin IVA
+    const total = parseFloat((subtotal + envio).toFixed(2));
+    const numeroPedido = 'DEL-' + Date.now().toString().slice(-4);
+
+    db.serialize(() => {
+        db.run('BEGIN TRANSACTION;');
+
+        const insertQuery = `
+            INSERT INTO pedidos_delivery (
+                numero_pedido, id_cliente, cliente_nombre, telefono, direccion,
+                origen, estado, repartidor, id_repartidor, notas, costo_delivery,
+                subtotal, impuesto, total, id_metodo_pago, banco, referencia_transferencia,
+                id_caja, id_usuario
+            ) VALUES (?, ?, ?, ?, ?, ?, 'PENDIENTE', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `;
+
+        db.run(
+            insertQuery,
+            [
+                numeroPedido, id_cliente || null, cliente_nombre.trim(), telefono || '', direccion.trim(),
+                origen || 'WHATSAPP', repartidor || null, id_repartidor || null, notas || '',
+                envio, subtotal, impuesto, total, id_metodo_pago || 1, banco || null,
+                referencia_transferencia || null, id_caja || null, id_usuario || 1
+            ],
+            function(errIns) {
+                if (errIns) {
+                    db.run('ROLLBACK;');
+                    return res.status(500).json({ error: errIns.message });
+                }
+
+                const id_pedido = this.lastID;
+                const detStmt = db.prepare(`INSERT INTO pedido_delivery_detalle (id_pedido, id_producto, cantidad, precio_unitario, subtotal) VALUES (?, ?, ?, ?, ?)`);
+
+                items.forEach(it => {
+                    const cant = parseInt(it.cantidad || 1);
+                    const prec = parseFloat(it.precio || it.precio_unitario || 0);
+                    detStmt.run([id_pedido, it.id_producto, cant, prec, cant * prec]);
+
+                    const queryReceta = `
+                        SELECT rd.id_insumo, rd.cantidad
+                        FROM recetas r
+                        JOIN receta_detalle rd ON r.id_receta = rd.id_receta
+                        WHERE r.id_producto = ?
+                    `;
+                    db.all(queryReceta, [it.id_producto], (errR, ingredientes) => {
+                        if (!errR && ingredientes && ingredientes.length > 0) {
+                            ingredientes.forEach(ing => {
+                                const desc = ing.cantidad * cant;
+                                db.run(`UPDATE insumos SET stock_actual = MAX(0, stock_actual - ?), fecha_actualizacion = CURRENT_TIMESTAMP WHERE id_insumo = ?`, [desc, ing.id_insumo]);
+                                db.run(
+                                    `INSERT INTO movimientos_inventario (id_insumo, tipo, cantidad, motivo, id_pedido_delivery, id_usuario) VALUES (?, 'SALIDA', ?, ?, ?, ?)`,
+                                    [ing.id_insumo, desc, `Pedido Delivery #${numeroPedido}`, id_pedido, id_usuario || 1]
+                                );
+                            });
+                        }
+                    });
+                });
+
+                detStmt.finalize();
+
+                db.run('COMMIT;', (commitErr) => {
+                    if (commitErr) return res.status(500).json({ error: commitErr.message });
+
+                    res.json({
+                        success: true,
+                        mensaje: 'Pedido de delivery registrado correctamente.',
+                        id_pedido,
+                        numero_pedido: numeroPedido,
+                        subtotal,
+                        costo_delivery: envio,
+                        impuesto,
+                        total
+                    });
+                });
+            }
+        );
+    });
+});
+
+// 3. Cambio de estado de un pedido delivery (PENDIENTE -> EN_PREPARACION -> LISTO -> EN_CAMINO -> ENTREGADO)
+app.patch('/api/delivery/pedidos/:id/estado', (req, res) => {
+    const { id } = req.params;
+    const { estado, nuevo_estado, repartidor, id_repartidor, id_caja, id_usuario } = req.body;
+
+    const rawEstado = (estado || nuevo_estado || '').trim().toUpperCase().replace(/ /g, '_').replace(/Ó/g, 'O');
+    const mapEstados = {
+        'PENDIENTE': 'PENDIENTE',
+        'EN_PREPARACION': 'EN_PREPARACION',
+        'LISTO': 'LISTO',
+        'EN_CAMINO': 'EN_CAMINO',
+        'ENTREGADO': 'ENTREGADO',
+        'CANCELADO': 'CANCELADO'
+    };
+
+    const targetEstado = mapEstados[rawEstado];
+    if (!targetEstado) {
+        return res.status(400).json({ error: 'Estado de pedido no válido: ' + (estado || nuevo_estado) });
+    }
+
+    db.get(`SELECT * FROM pedidos_delivery WHERE id_pedido = ?`, [id], (err, pedido) => {
+        if (err || !pedido) return res.status(404).json({ error: 'Pedido no encontrado.' });
+
+        let sql = `UPDATE pedidos_delivery SET estado = ?`;
+        let params = [targetEstado];
+
+        if (repartidor) {
+            sql += `, repartidor = ?`;
+            params.push(repartidor);
+        }
+        if (id_repartidor) {
+            sql += `, id_repartidor = ?`;
+            params.push(id_repartidor);
+        }
+        if (estado === 'ENTREGADO') {
+            sql += `, fecha_entrega = CURRENT_TIMESTAMP`;
+        }
+        sql += ` WHERE id_pedido = ?`;
+        params.push(id);
+
+        db.run(sql, params, function(errUpd) {
+            if (errUpd) return res.status(500).json({ error: errUpd.message });
+
+            // Si se marca como ENTREGADO y aún no tiene venta registrada, vincular a ventas para arqueo de caja
+            if (estado === 'ENTREGADO' && !pedido.id_venta) {
+                db.get(`SELECT id_caja FROM cajas WHERE estado = 'ABIERTA' ORDER BY id_caja DESC LIMIT 1`, [], (errC, cajaActiva) => {
+                    const cajaId = (cajaActiva ? cajaActiva.id_caja : (id_caja || pedido.id_caja || 1));
+                    const numFac = 'FAC-' + Date.now().toString().slice(-6);
+
+                    db.run(
+                        `INSERT INTO ventas (
+                            numero_factura, subtotal, costo_delivery, impuesto, total, monto_recibido, vuelto,
+                            id_metodo_pago, id_usuario, id_caja, id_cliente, cliente_nombre, telefono_cliente,
+                            tipo_entrega, origen_pedido, direccion_entrega, repartidor, notas_delivery,
+                            banco, referencia_transferencia, tipo_comprobante, estado
+                        ) VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?, ?, 'DELIVERY', ?, ?, ?, ?, ?, ?, 'TICKET', 'COMPLETADA')`,
+                        [
+                            numFac, pedido.subtotal, pedido.costo_delivery, pedido.impuesto, pedido.total, pedido.total,
+                            pedido.id_metodo_pago, id_usuario || pedido.id_usuario || 1, cajaId, pedido.id_cliente,
+                            pedido.cliente_nombre, pedido.telefono, pedido.origen, pedido.direccion,
+                            repartidor || pedido.repartidor || '', pedido.notas,
+                            pedido.banco, pedido.referencia_transferencia
+                        ],
+                        function(errVenta) {
+                            if (!errVenta) {
+                                const idVenta = this.lastID;
+                                db.run(`UPDATE pedidos_delivery SET id_venta = ? WHERE id_pedido = ?`, [idVenta, id]);
+                            }
+                        }
+                    );
+                });
+            }
+
+            res.json({ success: true, mensaje: `Estado actualizado a ${estado}`, nuevo_estado: estado });
+        });
+    });
+});
+
+// 4. Repartidores disponibles
+app.get('/api/delivery/repartidores', (req, res) => {
+    db.all(`SELECT * FROM repartidores WHERE estado = 1 ORDER BY nombre ASC`, [], (err, rows) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json(rows);
+    });
+});
+
+app.post('/api/delivery/repartidores', (req, res) => {
+    const { nombre, telefono, vehiculo, placa } = req.body;
+    if (!nombre) return res.status(400).json({ error: 'Nombre de repartidor requerido.' });
+    db.run(
+        `INSERT INTO repartidores (nombre, telefono, vehiculo, placa, estado) VALUES (?, ?, ?, ?, 1)`,
+        [nombre.trim(), telefono || '', vehiculo || 'Moto', placa || ''],
+        function(err) {
+            if (err) return res.status(500).json({ error: err.message });
+            res.json({ success: true, id_repartidor: this.lastID, mensaje: 'Repartidor registrado.' });
+        }
+    );
+});
+
+// 5. Ticket especial de cocina y despacho para delivery
+app.get('/api/delivery/pedidos/:id/ticket', (req, res) => {
+    const { id } = req.params;
+    db.get(`SELECT * FROM pedidos_delivery WHERE id_pedido = ?`, [id], (err, p) => {
+        if (err || !p) return res.status(404).json({ error: 'Pedido no encontrado.' });
+
+        db.all(`SELECT d.*, pr.nombre FROM pedido_delivery_detalle d JOIN productos pr ON d.id_producto = pr.id_producto WHERE d.id_pedido = ?`, [id], (errDet, items) => {
+            if (errDet) return res.status(500).json({ error: errDet.message });
+
+            let itemsTxt = '';
+            (items || []).forEach(it => {
+                itemsTxt += `${it.cantidad}x ${it.nombre.padEnd(22).slice(0, 22)} C$${it.subtotal.toFixed(2)}\n`;
+            });
+
+            const ticketCocina = `
+========================================
+       EL BUEN GUSTO - EL GUSTAZO       
+      COMANDA DE COCINA / DESPACHO      
+          PEDIDO A DOMICILIO            
+========================================
+PEDIDO:    #${p.numero_pedido}
+ORIGEN:    ${p.origen}
+FECHA:     ${new Date(p.fecha_creacion).toLocaleString('es-NI')}
+ESTADO:    ${p.estado}
+----------------------------------------
+DATOS DEL CLIENTE:
+CLIENTE:   ${p.cliente_nombre}
+TELEFONO:  ${p.telefono || 'Sin especificar'}
+DIRECCION EXACTA:
+${p.direccion}
+----------------------------------------
+REPARTIDOR: ${p.repartidor || 'Por asignar'}
+${p.notas ? `NOTAS:      ${p.notas}\n` : ''}----------------------------------------
+CANT DESCRIPCION               IMPORTE
+----------------------------------------
+${itemsTxt}----------------------------------------
+SUBTOTAL:                    C$ ${p.subtotal.toFixed(2)}
+ENVIO DELIVERY:              C$ ${p.costo_delivery.toFixed(2)}
+IVA (15%):                   C$ ${p.impuesto.toFixed(2)}
+========================================
+TOTAL A COBRAR:              C$ ${p.total.toFixed(2)}
+PAGO:                        ${p.id_metodo_pago === 1 ? 'EFECTIVO' : 'TRANSFERENCIA ' + (p.banco || '')}
+${p.referencia_transferencia ? `REFERENCIA:                  ${p.referencia_transferencia}\n` : ''}========================================
+\x1B\x69
+`;
+            res.json({ success: true, ticket: ticketCocina, pedido: p, items });
+        });
+    });
+});
+
+// 6. Mensajes preformateados de WhatsApp para cliente y repartidor (Sin Emojis)
+app.get('/api/delivery/pedidos/:id/mensajes-whatsapp', (req, res) => {
+    const { id } = req.params;
+    db.get(`SELECT * FROM pedidos_delivery WHERE id_pedido = ?`, [id], (err, p) => {
+        if (err || !p) return res.status(404).json({ error: 'Pedido no encontrado.' });
+
+        db.all(`SELECT d.*, pr.nombre FROM pedido_delivery_detalle d JOIN productos pr ON d.id_producto = pr.id_producto WHERE d.id_pedido = ?`, [id], (errDet, items) => {
+            let itemsTexto = '';
+            (items || []).forEach(it => {
+                itemsTexto += `• ${it.cantidad}x ${it.nombre} - C$ ${it.subtotal.toFixed(2)}\n`;
+            });
+
+            const msgClienteListo = `*EL BUEN GUSTO - EL GUSTAZO*\n` +
+                `*A tu Paladar - Sierra Maestra, Managua*\n` +
+                `------------------------------------\n` +
+                `Estimado/a *${p.cliente_nombre}*:\n` +
+                `Le informamos que su pedido *#${p.numero_pedido}* ya se encuentra *LISTO* y preparado en cocina.\n\n` +
+                `*Detalle de su orden:*\n${itemsTexto}` +
+                `Subtotal: C$ ${p.subtotal.toFixed(2)}\n` +
+                `Envio Delivery: C$ ${p.costo_delivery.toFixed(2)}\n` +
+                `*TOTAL A PAGAR: C$ ${p.total.toFixed(2)}*\n` +
+                `Forma de Pago: ${p.id_metodo_pago === 1 ? 'Efectivo contra entrega' : 'Transferencia ' + (p.banco || '')}\n` +
+                `------------------------------------\n` +
+                `En breve saldra con nuestro repartidor hacia su direccion: *${p.direccion}*.\n` +
+                `Muchas gracias por su preferencia.`;
+
+            const msgClienteEnCamino = `*EL BUEN GUSTO - EL GUSTAZO*\n` +
+                `*A tu Paladar - Sierra Maestra, Managua*\n` +
+                `------------------------------------\n` +
+                `Estimado/a *${p.cliente_nombre}*:\n` +
+                `Su pedido *#${p.numero_pedido}* va *EN CAMINO* hacia su direccion:\n` +
+                `*${p.direccion}*\n\n` +
+                `*Repartidor asignado:* ${p.repartidor || 'Personal de turno'}\n` +
+                `*Total exacto a pagar:* C$ ${p.total.toFixed(2)} (${p.id_metodo_pago === 1 ? 'Efectivo' : 'Transferencia confirmada'})\n` +
+                `------------------------------------\n` +
+                `Por favor estar atento/a a su telefono o timbre.`;
+
+            const msgRepartidor = `*ORDEN DE ENTREGA - EL GUSTAZO*\n` +
+                `*Pedido:* #${p.numero_pedido}\n` +
+                `*Cliente:* ${p.cliente_nombre}\n` +
+                `*Telefono:* ${p.telefono || 'Sin numero'}\n` +
+                `*Direccion de Entrega:*\n${p.direccion}\n` +
+                `${p.notas ? `*Instrucciones / Notas:* ${p.notas}\n` : ''}` +
+                `------------------------------------\n` +
+                `*Detalle:*\n${itemsTexto}` +
+                `*TOTAL A COBRAR:* C$ ${p.total.toFixed(2)}\n` +
+                `*Metodo:* ${p.id_metodo_pago === 1 ? 'EFECTIVO (Cobrar y entregar vuelto)' : 'TRANSFERENCIA BANCARIA (' + (p.banco || '') + ')'}\n` +
+                `------------------------------------`;
+
+            const telLimpio = (p.telefono || '').replace(/\D/g, '');
+            res.json({
+                success: true,
+                pedido: p,
+                wa_cliente_url: `https://wa.me/${telLimpio}?text=${encodeURIComponent(msgClienteEnCamino)}`,
+                wa_repartidor_url: `https://wa.me/?text=${encodeURIComponent(msgRepartidor)}`,
+                cliente_listo: {
+                    texto: msgClienteListo,
+                    link: `https://wa.me/${telLimpio}?text=${encodeURIComponent(msgClienteListo)}`
+                },
+                cliente_en_camino: {
+                    texto: msgClienteEnCamino,
+                    link: `https://wa.me/${telLimpio}?text=${encodeURIComponent(msgClienteEnCamino)}`
+                },
+                repartidor: {
+                    texto: msgRepartidor,
+                    link: `https://wa.me/?text=${encodeURIComponent(msgRepartidor)}`
+                }
+            });
+        });
+    });
+});
+
+// Generador de formato de Ticket Térmico Portátil ESC/POS (Sin Emojis)
 function generarTicketEscPos(data) {
     let itemsText = '';
-    data.items.forEach(it => {
-        const itemLine = `${it.cantidad}x ${it.nombre.padEnd(22).slice(0, 22)} C$${(it.precio * it.cantidad).toFixed(2)}\n`;
+    (data.items || []).forEach(it => {
+        const nom = (it.nombre || it.producto_nombre || 'Platillo').padEnd(22).slice(0, 22);
+        const cant = parseInt(it.cantidad || 1);
+        const prec = parseFloat(it.precio || it.precio_unitario || 0);
+        const itemLine = `${cant}x ${nom} C$${(prec * cant).toFixed(2)}\n`;
         itemsText += itemLine;
     });
 
@@ -851,14 +1357,13 @@ function generarTicketEscPos(data) {
 FACTURA: ${data.numeroFactura}
 FECHA:   ${data.fecha}
 CLIENTE: ${data.cliente}
-PAGO:    ${data.metodoPago}
+${data.telefono ? `TEL:     ${data.telefono}\n` : ''}${data.tipoEntrega && data.tipoEntrega !== 'LOCAL' ? `MODO:    ${data.tipoEntrega}\nDIR:     ${data.direccion || ''}\n` : ''}PAGO:    ${data.metodoPago}
 ${data.referencia ? `REF:     ${data.referencia}\n` : ''}----------------------------------------
 CANT DESCRIPCION               IMPORTE
 ----------------------------------------
 ${itemsText}----------------------------------------
 SUBTOTAL:                    C$ ${data.subtotal.toFixed(2)}
-IVA (15%):                   C$ ${data.impuesto.toFixed(2)}
-TOTAL A PAGAR:               C$ ${data.total.toFixed(2)}
+${data.envio > 0 ? `DELIVERY:                    C$ ${data.envio.toFixed(2)}\n` : ''}TOTAL A PAGAR:               C$ ${data.total.toFixed(2)}
 ========================================
 RECIBIDO:                    C$ ${data.recibido.toFixed(2)}
 VUELTO:                      C$ ${data.vuelto.toFixed(2)}
@@ -867,41 +1372,87 @@ VUELTO:                      C$ ${data.vuelto.toFixed(2)}
      Vuelva pronto a saborear lo bueno  
 ========================================
 \x1B\x69
-`; // Código ESC/POS de corte de papel
+`;
 }
 
-// Generador de Resumen Formateado para WhatsApp (RF-05)
+// Generador de Resumen Formateado para WhatsApp (Formato Formal Sin Emojis)
 function generarResumenWhatsApp(data) {
-    let lineas = `🍔 *EL BUEN GUSTO - EL GUSTAZO* 🍔\n` +
-        `📍 *Sierra Maestra, Managua*\n` +
-        `🧾 *Factura:* ${data.numeroFactura}\n` +
-        `📅 *Fecha:* ${data.fecha}\n` +
-        `👤 *Cliente:* ${data.cliente}\n` +
-        `------------------------------------\n`;
+    let lineas = `*EL BUEN GUSTO - EL GUSTAZO*\n` +
+        `*A tu Paladar - Sierra Maestra, Managua*\n` +
+        `------------------------------------\n` +
+        `*Factura:* ${data.numeroFactura}\n` +
+        `*Fecha:* ${data.fecha}\n` +
+        `*Cliente:* ${data.cliente}\n`;
 
-    data.items.forEach(it => {
-        lineas += `• ${it.cantidad}x ${it.nombre} - C$ ${(it.precio * it.cantidad).toFixed(2)}\n`;
+    if (data.direccion && data.tipoEntrega === 'DELIVERY') {
+        lineas += `*Entrega a Domicilio:* ${data.direccion}\n`;
+        if (data.repartidor) lineas += `*Repartidor:* ${data.repartidor}\n`;
+    }
+
+    lineas += `------------------------------------\n`;
+
+    (data.items || []).forEach(it => {
+        const nom = it.nombre || it.producto_nombre || 'Platillo';
+        const cant = parseInt(it.cantidad || 1);
+        const prec = parseFloat(it.precio || it.precio_unitario || 0);
+        lineas += `• ${cant}x ${nom} - C$ ${(prec * cant).toFixed(2)}\n`;
     });
 
     lineas += `------------------------------------\n` +
-        `💵 *Subtotal:* C$ ${data.subtotal.toFixed(2)}\n` +
-        `📊 *IVA (15%):* C$ ${data.impuesto.toFixed(2)}\n` +
-        `💰 *TOTAL PAGADO:* C$ ${data.total.toFixed(2)}\n` +
-        `💳 *Método:* ${data.metodoPago}\n`;
+        `Subtotal: C$ ${data.subtotal.toFixed(2)}\n`;
+
+    if (data.envio > 0) {
+        lineas += `Envio Delivery: C$ ${data.envio.toFixed(2)}\n`;
+    }
+
+    lineas += `*TOTAL PAGADO: C$ ${data.total.toFixed(2)}*\n` +
+        `Metodo de Pago: ${data.metodoPago}\n`;
 
     if (data.referencia) {
-        lineas += `🔖 *Referencia Bancaria:* ${data.referencia}\n`;
+        lineas += `Referencia Bancaria: ${data.referencia}\n`;
     }
 
     if (data.vuelto > 0) {
-        lineas += `🪙 *Vuelto entregado:* C$ ${data.vuelto.toFixed(2)}\n`;
+        lineas += `Vuelto Entregado: C$ ${data.vuelto.toFixed(2)}\n`;
     }
 
     lineas += `------------------------------------\n` +
-        `✨ *¡Muchas gracias por su preferencia!* ✨`;
+        `¡Muchas gracias por su preferencia!`;
 
     return lineas;
 }
+
+// Comprobante digital por número de factura (Para visualización web y código QR)
+app.get('/api/ventas/comprobante/:numero_factura', (req, res) => {
+    const num = req.params.numero_factura;
+    db.get(`
+        SELECT v.*, mp.nombre AS metodo_pago_nombre, u.nombre AS cajero_nombre, c.telefono AS cliente_tel_db
+        FROM ventas v
+        LEFT JOIN metodos_pago mp ON v.id_metodo_pago = mp.id_metodo_pago
+        LEFT JOIN usuarios u ON v.id_usuario = u.id_usuario
+        LEFT JOIN clientes c ON v.id_cliente = c.id_cliente
+        WHERE v.numero_factura = ?
+    `, [num], (err, venta) => {
+        if (err) return res.status(500).json({ error: err.message });
+        if (!venta) return res.status(404).json({ error: 'Comprobante no encontrado.' });
+
+        db.all(`
+            SELECT vd.*, p.nombre AS producto_nombre
+            FROM venta_detalle vd
+            JOIN productos p ON vd.id_producto = p.id_producto
+            WHERE vd.id_venta = ?
+        `, [venta.id_venta], (errItems, items) => {
+            if (errItems) return res.status(500).json({ error: errItems.message });
+            res.json({
+                success: true,
+                venta: {
+                    ...venta,
+                    items: items || []
+                }
+            });
+        });
+    });
+});
 
 // Historial general de ventas
 app.get('/api/ventas', (req, res) => {
@@ -923,66 +1474,196 @@ app.get('/api/ventas', (req, res) => {
 // MÓDULO 6: REPORTES ANALÍTICOS ESTRATÉGICOS (RF-22)
 // ==========================================
 app.get('/api/reportes/dashboard', (req, res) => {
+    const periodo = (req.query.periodo || 'todo').toLowerCase();
+
+    let whereVentas = 'WHERE 1=1';
+    let whereJoin = '1=1';
+
+    if (periodo === 'hoy') {
+        whereVentas = "WHERE date(fecha) = date('now', 'localtime')";
+        whereJoin = "date(v.fecha) = date('now', 'localtime')";
+    } else if (periodo === 'semana') {
+        whereVentas = "WHERE date(fecha) >= date('now', 'localtime', '-7 days')";
+        whereJoin = "date(v.fecha) >= date('now', 'localtime', '-7 days')";
+    } else if (periodo === 'mes') {
+        whereVentas = "WHERE strftime('%Y-%m', fecha) = strftime('%Y-%m', 'now', 'localtime')";
+        whereJoin = "strftime('%Y-%m', v.fecha) = strftime('%Y-%m', 'now', 'localtime')";
+    }
+
     // 1. KPIs Generales
     const kpiQuery = `
         SELECT COUNT(id_venta) AS total_ordenes,
                COALESCE(SUM(total), 0) AS ingresos_totales,
                COALESCE(AVG(total), 0) AS ticket_promedio,
                COALESCE(SUM(CASE WHEN id_metodo_pago = 1 THEN total ELSE 0 END), 0) AS total_efectivo,
-               COALESCE(SUM(CASE WHEN id_metodo_pago = 2 THEN total ELSE 0 END), 0) AS total_transferencias
+               COALESCE(SUM(CASE WHEN id_metodo_pago = 2 THEN total ELSE 0 END), 0) AS total_transferencias,
+               COALESCE(SUM(CASE WHEN tipo_entrega = 'DELIVERY' THEN 1 ELSE 0 END), 0) AS ordenes_delivery,
+               COALESCE(SUM(CASE WHEN tipo_entrega = 'DELIVERY' THEN total ELSE 0 END), 0) AS total_delivery,
+               COALESCE(SUM(CASE WHEN tipo_entrega = 'LOCAL' THEN 1 ELSE 0 END), 0) AS ordenes_local,
+               COALESCE(SUM(CASE WHEN tipo_entrega = 'LOCAL' THEN total ELSE 0 END), 0) AS total_local
         FROM ventas
+        ${whereVentas}
     `;
 
-    db.get(kpiQuery, [], (err, kpis) => {
-        if (err) return res.status(500).json({ error: err.message });
+    db.get(kpiQuery, [], (errKpi, kpis) => {
+        if (errKpi) return res.status(500).json({ error: errKpi.message });
 
-        // 2. Platillos y Combos más Vendidos
+        // 2. Platillos y Combos más Vendidos (Top 10)
         const topProductosQuery = `
-            SELECT p.nombre, c.nombre AS categoria,
-                   SUM(vd.cantidad) AS total_vendido,
-                   SUM(vd.subtotal) AS total_ingresos
-            FROM venta_detalle vd
-            JOIN productos p ON vd.id_producto = p.id_producto
+            SELECT p.id_producto, p.nombre, c.nombre AS categoria,
+                   COALESCE(SUM(vd.cantidad), 0) AS total_vendido,
+                   COALESCE(SUM(vd.subtotal), 0) AS total_ingresos
+            FROM productos p
             JOIN categorias c ON p.id_categoria = c.id_categoria
-            GROUP BY vd.id_producto
-            ORDER BY total_vendido DESC
-            LIMIT 5
+            JOIN venta_detalle vd ON p.id_producto = vd.id_producto
+            JOIN ventas v ON vd.id_venta = v.id_venta
+            WHERE ${whereJoin}
+            GROUP BY p.id_producto
+            ORDER BY total_vendido DESC, total_ingresos DESC
+            LIMIT 10
         `;
 
         db.all(topProductosQuery, [], (errTop, topProductos) => {
             if (errTop) return res.status(500).json({ error: errTop.message });
 
-            // 3. Desglose detallado por banco
-            const bancosQuery = `
-                SELECT COALESCE(banco, 'Sin Banco') AS banco,
-                       COUNT(id_venta) AS cantidad,
-                       COALESCE(SUM(total), 0) AS monto
-                FROM ventas
-                WHERE id_metodo_pago = 2
-                GROUP BY banco
+            // 3. Platillos de Baja Rotación (Alerta de Estancamiento / Sugerencia de Rotación)
+            const bajaRotacionQuery = `
+                SELECT p.id_producto, p.nombre, c.nombre AS categoria, p.precio,
+                       COALESCE(SUM(CASE WHEN ${whereJoin} THEN vd.cantidad ELSE 0 END), 0) AS total_vendido
+                FROM productos p
+                JOIN categorias c ON p.id_categoria = c.id_categoria
+                LEFT JOIN venta_detalle vd ON p.id_producto = vd.id_producto
+                LEFT JOIN ventas v ON vd.id_venta = v.id_venta
+                WHERE p.estado = 1
+                GROUP BY p.id_producto
+                HAVING total_vendido <= 2
+                ORDER BY total_vendido ASC, p.precio DESC
+                LIMIT 8
             `;
 
-            db.all(bancosQuery, [], (errBancos, desglosesBancos) => {
-                if (errBancos) return res.status(500).json({ error: errBancos.message });
+            db.all(bajaRotacionQuery, [], (errBaja, bajaRotacion) => {
+                if (errBaja) return res.status(500).json({ error: errBaja.message });
 
-                // 4. Ventas por hora del día (para detectar horas pico)
-                const horasQuery = `
-                    SELECT strftime('%H', fecha) AS hora,
-                           COUNT(id_venta) AS ordenes,
-                           COALESCE(SUM(total), 0) AS total
+                const rotacionConAccion = (bajaRotacion || []).map(item => {
+                    let sugerencia = 'Crear promoción o combo para reactivar demanda.';
+                    if (item.categoria.includes('Alitas')) {
+                        sugerencia = 'Activar oferta 2x1 o combo con bebida el fin de semana.';
+                    } else if (item.categoria.includes('Burrito') || item.categoria.includes('Quesadilla')) {
+                        sugerencia = 'Promover como opción de almuerzo rápido por WhatsApp.';
+                    } else if (item.categoria.includes('Hot Dog')) {
+                        sugerencia = 'Ofrecer como combo económico para acompañantes o niños.';
+                    } else if (item.categoria.includes('Papas')) {
+                        sugerencia = 'Sugerir como adición con precio especial en cada orden.';
+                    } else if (item.categoria.includes('Bebidas')) {
+                        sugerencia = 'Vincular en combo automático para subir ticket promedio.';
+                    }
+                    return { ...item, sugerencia_comercial: sugerencia };
+                });
+
+                // 4. Mensajes Financieros Accionables para Toma de Decisiones
+                const totalIngresos = kpis.ingresos_totales || 0;
+                const mensajes = [];
+
+                // Mensaje 1: Producto Estrella
+                if (topProductos && topProductos.length > 0) {
+                    const estrella = topProductos[0];
+                    const pctEstrella = totalIngresos > 0 ? Math.round((estrella.total_ingresos / totalIngresos) * 100) : 0;
+                    mensajes.push({
+                        tipo: 'estrella',
+                        titulo: 'Producto Estrella & Demanda Principal',
+                        nivel: 'success',
+                        descripcion: `"${estrella.nombre}" es el más vendido con ${estrella.total_vendido} unidades (C$ ${estrella.total_ingresos.toFixed(2)}, aportando el ${pctEstrella}% de los ingresos del período).`,
+                        accion: 'Garantizar stock prioritario de insumos para este platillo para evitar quiebres y evaluar un combo derivado.'
+                    });
+                } else {
+                    mensajes.push({
+                        tipo: 'estrella',
+                        titulo: 'Ventas en Desarrollo',
+                        nivel: 'info',
+                        descripcion: 'No hay ventas registradas en el período seleccionado.',
+                        accion: 'Promocione los combos destacados en el canal de WhatsApp de Sierra Maestra.'
+                    });
+                }
+
+                // Mensaje 2: Alerta de Rotación / Estancamiento
+                if (rotacionConAccion.length > 0) {
+                    const nombresBaja = rotacionConAccion.slice(0, 3).map(p => p.nombre).join(', ');
+                    mensajes.push({
+                        tipo: 'rotacion',
+                        titulo: 'Alerta de Rotación & Capital Inmovilizado',
+                        nivel: 'warning',
+                        descripcion: `Se detectaron ${rotacionConAccion.length} platillos con ventas nulas o muy bajas (ej: ${nombresBaja}).`,
+                        accion: 'Evite compras excesivas de sus ingredientes perecederos. Active combos 2x1 o promociones de turno para movilizar materia prima.'
+                    });
+                }
+
+                // Mensaje 3: Rendimiento de Canales (Delivery vs Local)
+                const ordDel = kpis.ordenes_delivery || 0;
+                const ordLoc = kpis.ordenes_local || 0;
+                const totOrd = ordDel + ordLoc;
+                const pctDel = totOrd > 0 ? Math.round((ordDel / totOrd) * 100) : 0;
+                const ingDel = kpis.total_delivery || 0;
+                mensajes.push({
+                    tipo: 'canal',
+                    titulo: 'Rendimiento de Canales: Delivery vs Local',
+                    nivel: 'primary',
+                    descripcion: `El Delivery representa el ${pctDel}% de los pedidos (${ordDel} órdenes, C$ ${ingDel.toFixed(2)}) frente a ${100 - pctDel}% en mesa/mostrador.`,
+                    accion: pctDel >= 50
+                        ? 'El delivery es su mayor motor comercial. Verifique tiempos de empaque y asegure que las tarifas de envío cubran los costos de combustible.'
+                        : 'El consumo local domina las ventas. Promueva activamente los pedidos a domicilio en Sierra Maestra y barrios cercanos por WhatsApp.'
+                });
+
+                // Mensaje 4: Gestión de Liquidez & Arqueos
+                const totEf = kpis.total_efectivo || 0;
+                const totTr = kpis.total_transferencias || 0;
+                const totDinero = totEf + totTr;
+                const pctEf = totDinero > 0 ? Math.round((totEf / totDinero) * 100) : 0;
+                mensajes.push({
+                    tipo: 'liquidez',
+                    titulo: 'Gestión de Liquidez & Control de Caja',
+                    nivel: pctEf > 60 ? 'warning' : 'info',
+                    descripcion: `El ${pctEf}% de los ingresos ingresaron en efectivo físico (C$ ${totEf.toFixed(2)}) y el ${100 - pctEf}% en transferencias bancarias (C$ ${totTr.toFixed(2)}).`,
+                    accion: pctEf > 60
+                        ? 'Alto flujo de efectivo en gaveta. Realice arqueos parciales de seguridad y mantenga el fondo mínimo en mostrador.'
+                        : 'Preponderancia de transferencias bancarias. Exija siempre verificar la referencia bancaria antes de entregar el pedido.'
+                });
+
+                // 5. Desglose detallado por banco
+                const bancosQuery = `
+                    SELECT COALESCE(banco, 'Sin Banco') AS banco,
+                           COUNT(id_venta) AS cantidad,
+                           COALESCE(SUM(total), 0) AS monto
                     FROM ventas
-                    GROUP BY hora
-                    ORDER BY hora ASC
+                    WHERE id_metodo_pago = 2 AND ${whereJoin.replace(/v\./g, '')}
+                    GROUP BY banco
                 `;
 
-                db.all(horasQuery, [], (errHoras, ventasHoras) => {
-                    if (errHoras) return res.status(500).json({ error: errHoras.message });
+                db.all(bancosQuery, [], (errBancos, desglosesBancos) => {
+                    if (errBancos) return res.status(500).json({ error: errBancos.message });
 
-                    res.json({
-                        kpis,
-                        top_productos: topProductos,
-                        desglose_bancos: desglosesBancos,
-                        ventas_por_hora: ventasHoras
+                    // 6. Ventas por hora del día (para detectar horas pico)
+                    const horasQuery = `
+                        SELECT strftime('%H', fecha) AS hora,
+                               COUNT(id_venta) AS ordenes,
+                               COALESCE(SUM(total), 0) AS total
+                        FROM ventas
+                        WHERE ${whereJoin.replace(/v\./g, '')}
+                        GROUP BY hora
+                        ORDER BY hora ASC
+                    `;
+
+                    db.all(horasQuery, [], (errHoras, ventasHoras) => {
+                        if (errHoras) return res.status(500).json({ error: errHoras.message });
+
+                        res.json({
+                            periodo,
+                            kpis,
+                            top_productos: topProductos,
+                            baja_rotacion: rotacionConAccion,
+                            mensajes_financieros: mensajes,
+                            desglose_bancos: desglosesBancos,
+                            ventas_por_hora: ventasHoras
+                        });
                     });
                 });
             });
@@ -1041,8 +1722,8 @@ app.get('/api/backup/descargar/:archivo', (req, res) => {
 // Iniciar servidor local
 const server = app.listen(PORT, () => {
     console.log(`=======================================================`);
-    console.log(`🍟 Servidor El Gustazo POS Activo en http://localhost:${PORT}`);
-    console.log(`⚙️  Modo: 100% Offline | DB: SQLite3 | Sierra Maestra`);
+    console.log(`[OK] Servidor El Gustazo POS Activo en http://localhost:${PORT}`);
+    console.log(`[OK] Modo: 100% Offline | DB: SQLite3 | Sierra Maestra`);
     console.log(`=======================================================`);
 });
 

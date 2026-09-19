@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Control de Inventarios & BOM - El Gustazo</title>
-    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/style.css?v=2.4">
 </head>
 <body>
     <header class="main-header">
@@ -17,15 +17,16 @@
         </a>
 
         <nav class="nav-menu">
-            <a href="pos.html" class="nav-link">🛒 POS & Ventas</a>
-            <a href="inventario.html" class="nav-link active">📦 Inventario & BOM</a>
-            <a href="clientes.html" class="nav-link">👥 Clientes</a>
-            <a href="caja.html" class="nav-link">💵 Caja Chica</a>
-            <a href="admin.html" class="nav-link admin-only">⚙️ Admin & Reportes</a>
+            <a href="pos.html" class="nav-link">POS & Ventas</a>
+            <a href="delivery.html" class="nav-link">Delivery</a>
+            <a href="inventario.html" class="nav-link active">Inventario</a>
+            <a href="clientes.html" class="nav-link">Clientes</a>
+            <a href="caja.html" class="nav-link">Caja Chica</a>
+            <a href="admin.html" class="nav-link admin-only">Administración</a>
         </nav>
 
         <div class="user-status">
-            <button id="btn-header-alert" class="header-alert-btn">⚠️ Insumos Críticos</button>
+            <button id="btn-header-alert" class="header-alert-btn">Insumos Críticos</button>
             <div class="user-badge">
                 <span id="header-user-name">Usuario</span>
                 <span id="header-user-role" class="role-pill">Rol</span>
@@ -37,7 +38,7 @@
     <main class="module-container">
         <div class="module-header-box">
             <div>
-                <h2>📦 Control de Inventario por Receta (BOM) y Alertas</h2>
+                <h2>Control de Inventario por Receta (BOM) y Alertas</h2>
                 <p>Monitoreo en tiempo real de insumos, reporte de faltantes para reabastecimiento y registro de entradas.</p>
             </div>
             <button class="btn-charge" style="padding: 10px 18px;" onclick="abrirModalEntradaStock()">
@@ -53,7 +54,7 @@
                 <span class="kpi-sub">Materias primas en catálogo</span>
             </div>
             <div class="kpi-card red">
-                <span class="kpi-label">Insumos en Escasez Crítica (RF-10)</span>
+                <span class="kpi-label">Insumos en Escasez Crítica</span>
                 <span id="kpi-insumos-bajos" class="kpi-value">0</span>
                 <span class="kpi-sub">Stock actual ≤ Mínimo requerido</span>
             </div>
@@ -66,8 +67,8 @@
 
         <!-- Pestañas del Módulo -->
         <div class="tabs-container">
-            <button class="tab-btn active" onclick="cambiarTabInventario('tab-existencias', this)">Existencias y Alertas (RF-10)</button>
-            <button class="tab-btn" onclick="cambiarTabInventario('tab-faltantes', this)">📋 Reporte de Compras Siguiente Turno (RF-11)</button>
+            <button class="tab-btn active" onclick="cambiarTabInventario('tab-existencias', this)">Existencias y Alertas</button>
+            <button class="tab-btn" onclick="cambiarTabInventario('tab-faltantes', this)">Reporte de Compras Siguiente Turno</button>
             <button class="tab-btn" onclick="cambiarTabInventario('tab-movimientos', this)">Historial de Movimientos</button>
         </div>
 
@@ -81,7 +82,6 @@
                             <th>Unidad</th>
                             <th>Stock Actual</th>
                             <th>Stock Mínimo</th>
-                            <th>Costo Unitario</th>
                             <th>Estado</th>
                             <th>Acciones</th>
                         </tr>
@@ -93,16 +93,16 @@
             </div>
         </section>
 
-        <!-- TAB 2: Reporte Automático de Insumos Faltantes (RF-11) -->
+        <!-- TAB 2: Reporte Automático de Insumos Faltantes -->
         <section id="tab-faltantes" style="display: none;">
             <div class="module-header-box" style="margin-bottom: 12px; background:#FEF3C7; border-left-color: #D97706;">
                 <div>
-                    <h3 style="color:#B45309;">⚠️ Lista Consolidada de Reabastecimiento para el Siguiente Turno</h3>
+                    <h3 style="color:#B45309;">Lista Consolidada de Reabastecimiento para el Siguiente Turno</h3>
                     <p style="color:#78350F;">Insumos que alcanzaron o están por debajo del umbral mínimo de seguridad.</p>
                 </div>
                 <div style="display: flex; gap: 8px;">
-                    <button class="btn-small" style="background:#1E293B;" onclick="copiarReporteFaltantes()">📋 Copiar Lista</button>
-                    <button class="btn-small" style="background:#D97706;" onclick="window.print()">🖨️ Imprimir Lista</button>
+                    <button class="btn-small" style="background:#1E293B;" onclick="copiarReporteFaltantes()">Copiar Lista</button>
+                    <button class="btn-small" style="background:#D97706;" onclick="window.print()">Imprimir Lista</button>
                 </div>
             </div>
 
@@ -114,8 +114,6 @@
                             <th>Stock Actual</th>
                             <th>Stock Mínimo</th>
                             <th>Sugerencia a Comprar</th>
-                            <th>Costo Est. Unitario</th>
-                            <th>Inversión Estimada</th>
                         </tr>
                     </thead>
                     <tbody id="tabla-faltantes-body">
@@ -151,7 +149,7 @@
     <div id="modal-entrada-stock" class="modal-backdrop">
         <div class="modal-box">
             <div class="modal-header">
-                <h3>📥 Registrar Entrada de Materia Prima / Ajuste</h3>
+                <h3>Registrar Entrada de Materia Prima / Ajuste</h3>
                 <button type="button" class="modal-close-btn" onclick="cerrarModalEntradaStock()">&times;</button>
             </div>
             <form onsubmit="guardarMovimientoStock(event)">
@@ -175,11 +173,6 @@
                     <div class="form-group">
                         <label for="txt-cantidad-mov">Cantidad (*):</label>
                         <input type="number" id="txt-cantidad-mov" required min="0.01" step="0.01" placeholder="Ej: 20">
-                    </div>
-
-                    <div class="form-group">
-                        <label for="txt-costo-mov">Costo Unitario de Compra (C$ - Opcional):</label>
-                        <input type="number" id="txt-costo-mov" min="0" step="0.01" placeholder="Ej: 10.50">
                     </div>
 
                     <div class="form-group">
@@ -240,10 +233,9 @@
                             ${ins.stock_actual}
                         </td>
                         <td>${ins.stock_minimo}</td>
-                        <td>${formatoMoneda(ins.costo_unitario)}</td>
                         <td>
                             <span class="status-badge ${esBajo ? 'danger' : 'success'}">
-                                ${esBajo ? '⚠️ Stock Crítico' : '✓ Normal'}
+                                ${esBajo ? 'Stock Crítico' : 'Normal'}
                             </span>
                         </td>
                         <td>
@@ -275,8 +267,8 @@
                 tbody.innerHTML = '';
 
                 if (faltantes.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding: 20px; color:#16A34A; font-weight:700;">
-                        🎉 ¡Excelente! No hay insumos en estado crítico para el siguiente turno.
+                    tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding: 20px; color:#16A34A; font-weight:700;">
+                        No hay insumos en estado crítico para el siguiente turno.
                     </td></tr>`;
                     return;
                 }
@@ -288,8 +280,6 @@
                         <td style="color:#DC2626; font-weight:700;">${f.stock_actual} ${f.unidad_medida}</td>
                         <td>${f.stock_minimo} ${f.unidad_medida}</td>
                         <td style="color:#D97706; font-weight:800; font-size:1.05rem;">+${f.sugerencia_reabastecer} ${f.unidad_medida}</td>
-                        <td>${formatoMoneda(f.costo_unitario)}</td>
-                        <td style="font-weight:700;">${formatoMoneda(f.costo_estimado)}</td>
                     `;
                     tbody.appendChild(tr);
                 });
@@ -341,7 +331,6 @@
             const id_insumo = document.getElementById('select-insumo-mov').value;
             const tipo = document.getElementById('select-tipo-mov').value;
             const cantidad = document.getElementById('txt-cantidad-mov').value;
-            const costo_unitario = document.getElementById('txt-costo-mov').value;
             const motivo = document.getElementById('txt-motivo-mov').value;
             const usuario = obtenerUsuarioActual();
 
@@ -383,9 +372,9 @@
                     return;
                 }
 
-                let texto = `📋 *LISTA DE REABASTECIMIENTO - EL GUSTAZO*\n`;
-                texto += `📍 Sierra Maestra, Managua\n`;
-                texto += `📅 Fecha: ${new Date().toLocaleDateString('es-NI')}\n`;
+                let texto = `*LISTA DE REABASTECIMIENTO - EL GUSTAZO*\n`;
+                texto += `Sierra Maestra, Managua\n`;
+                texto += `Fecha: ${new Date().toLocaleDateString('es-NI')}\n`;
                 texto += `----------------------------------------\n`;
 
                 faltantes.forEach(f => {

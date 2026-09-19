@@ -214,32 +214,65 @@ body {
    ========================================================= */
 .dashboard-container {
     display: grid;
-    grid-template-columns: 1fr 440px;
-    gap: 20px;
-    padding: 20px;
-    flex: 1;
-    max-height: calc(100vh - 70px);
+    grid-template-columns: 1fr 460px;
+    gap: 16px;
+    padding: 14px 18px;
+    height: calc(100vh - 72px);
+    max-height: calc(100vh - 72px);
+    box-sizing: border-box;
     overflow: hidden;
 }
 
-.catalog-section, .billing-section {
+.catalog-section {
     background: var(--surface-card);
     border: 1px solid var(--border-color);
     border-radius: var(--radius-md);
     box-shadow: var(--shadow-sm);
     display: flex;
     flex-direction: column;
+    height: 100%;
+    min-height: 0;
     overflow: hidden;
+}
+
+.billing-section {
+    background: #FFFFFF;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-width: thin;
+    scrollbar-color: var(--primary-orange) #F1F5F9;
+}
+
+.billing-section::-webkit-scrollbar {
+    width: 7px;
+}
+.billing-section::-webkit-scrollbar-track {
+    background: #F8FAFC;
+}
+.billing-section::-webkit-scrollbar-thumb {
+    background: #CBD5E1;
+    border-radius: 4px;
+}
+.billing-section::-webkit-scrollbar-thumb:hover {
+    background: var(--primary-orange);
 }
 
 /* Encabezados de paneles */
 .panel-header {
-    padding: 14px 20px;
+    padding: 10px 18px;
     background: #FFFBF5;
     border-bottom: 2px solid var(--amber-light);
     display: flex;
     justify-content: space-between;
     align-items: center;
+    flex-shrink: 0;
 }
 
 .panel-header h2 {
@@ -253,12 +286,13 @@ body {
 
 /* Barra de categorías y búsqueda */
 .catalog-toolbar {
-    padding: 12px 20px;
+    padding: 10px 18px;
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 8px;
     border-bottom: 1px solid var(--border-color);
     background: #FAFAFA;
+    flex-shrink: 0;
 }
 
 .search-input-wrap {
@@ -268,10 +302,10 @@ body {
 
 .search-input-wrap input {
     width: 100%;
-    padding: 10px 14px 10px 38px;
+    padding: 8px 12px 8px 36px;
     border: 1.5px solid var(--border-color);
     border-radius: var(--radius-sm);
-    font-size: 0.95rem;
+    font-size: 0.9rem;
     outline: none;
     transition: border 0.2s;
 }
@@ -287,27 +321,46 @@ body {
     top: 50%;
     transform: translateY(-50%);
     color: var(--text-muted);
-    font-size: 1rem;
+    font-size: 0.95rem;
 }
 
 .categories-bar {
     display: flex;
-    gap: 8px;
+    gap: 6px;
     overflow-x: auto;
-    padding-bottom: 4px;
+    overflow-y: hidden;
+    padding: 2px 2px 6px;
+    scrollbar-width: thin;
+    scrollbar-color: #CBD5E1 #F1F5F9;
+}
+
+.categories-bar::-webkit-scrollbar {
+    height: 5px;
+}
+.categories-bar::-webkit-scrollbar-track {
+    background: #F1F5F9;
+    border-radius: 3px;
+}
+.categories-bar::-webkit-scrollbar-thumb {
+    background: #CBD5E1;
+    border-radius: 3px;
+}
+.categories-bar::-webkit-scrollbar-thumb:hover {
+    background: var(--primary-orange);
 }
 
 .cat-btn {
     background: #FFFFFF;
-    border: 1px solid var(--border-color);
+    border: 1.5px solid var(--border-color);
     color: var(--text-secondary);
-    padding: 6px 14px;
+    padding: 5px 12px;
     border-radius: 20px;
-    font-size: 0.85rem;
-    font-weight: 600;
+    font-size: 0.8rem;
+    font-weight: 700;
     cursor: pointer;
     white-space: nowrap;
-    transition: all 0.2s ease;
+    transition: all 0.15s ease;
+    flex-shrink: 0;
 }
 
 .cat-btn:hover {
@@ -321,30 +374,52 @@ body {
     color: #FFFFFF;
 }
 
-/* Grilla de productos */
+/* Grilla de productos con scrollbar garantizado */
 .product-grid-wrap {
-    flex: 1;
-    overflow-y: auto;
-    padding: 16px 20px;
+    flex: 1 1 0;
+    min-height: 0;
+    overflow-y: scroll;
+    overflow-x: hidden;
+    padding: 14px 18px;
+    scrollbar-gutter: stable;
+    scrollbar-width: thin;
+    scrollbar-color: var(--primary-orange) #F1F5F9;
+}
+
+.product-grid-wrap::-webkit-scrollbar {
+    width: 9px;
+}
+.product-grid-wrap::-webkit-scrollbar-track {
+    background: #F1F5F9;
+    border-radius: 6px;
+}
+.product-grid-wrap::-webkit-scrollbar-thumb {
+    background: #CBD5E1;
+    border-radius: 6px;
+    border: 2px solid #F1F5F9;
+}
+.product-grid-wrap::-webkit-scrollbar-thumb:hover {
+    background: var(--primary-orange);
 }
 
 .product-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(185px, 1fr));
     gap: 14px;
 }
 
 .product-card {
     background: #FFFFFF;
-    border: 1.5px solid #F1F5F9;
+    border: 1.5px solid #E2E8F0;
     border-radius: var(--radius-md);
-    padding: 14px;
+    padding: 15px;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
     cursor: pointer;
+    min-height: 130px;
     transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.03);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.04);
     position: relative;
     user-select: none;
 }
@@ -352,7 +427,7 @@ body {
 .product-card:hover {
     transform: translateY(-3px);
     border-color: var(--amber-gold);
-    box-shadow: 0 6px 12px rgba(245, 158, 11, 0.15);
+    box-shadow: 0 8px 16px rgba(245, 158, 11, 0.18);
 }
 
 .product-card:active {
@@ -360,7 +435,7 @@ body {
 }
 
 .product-card.is-combo {
-    border-left: 4px solid var(--amber-gold);
+    border-left: 5px solid var(--amber-gold);
     background: #FFFDF9;
 }
 
@@ -369,27 +444,27 @@ body {
     top: 8px;
     right: 8px;
     background: var(--amber-light);
-    color: #B45309;
-    font-size: 0.65rem;
+    color: #9A3412;
+    font-size: 0.72rem;
     font-weight: 800;
-    padding: 2px 6px;
+    padding: 2px 7px;
     border-radius: 4px;
     border: 1px solid var(--amber-gold);
 }
 
 .product-card h3 {
-    font-size: 0.95rem;
-    font-weight: 700;
-    color: var(--text-primary);
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: #0F172A;
     margin-bottom: 6px;
-    line-height: 1.25;
+    line-height: 1.3;
 }
 
 .product-card p.desc {
-    font-size: 0.75rem;
-    color: var(--text-secondary);
-    margin-bottom: 10px;
-    line-height: 1.3;
+    font-size: 0.82rem;
+    color: #475569;
+    margin-bottom: 12px;
+    line-height: 1.35;
     display: -webkit-box;
     display: box;
     -webkit-line-clamp: 2;
@@ -404,32 +479,35 @@ body {
     justify-content: space-between;
     align-items: center;
     margin-top: auto;
+    padding-top: 4px;
 }
 
 .product-card .price {
-    font-size: 1.15rem;
-    font-weight: 800;
+    font-size: 1.25rem;
+    font-weight: 900;
     color: var(--primary-orange);
+    letter-spacing: -0.2px;
 }
 
 .product-card .add-btn {
     background: var(--amber-light);
     color: var(--primary-orange);
-    border: 1px solid var(--amber-gold);
-    width: 28px;
-    height: 28px;
+    border: 1.5px solid var(--amber-gold);
+    width: 32px;
+    height: 32px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-weight: 800;
-    font-size: 1.1rem;
+    font-weight: 900;
+    font-size: 1.25rem;
     transition: all 0.15s;
 }
 
 .product-card:hover .add-btn {
     background: var(--primary-orange);
     color: #FFFFFF;
+    border-color: var(--primary-orange);
 }
 
 /* =========================================================
@@ -439,44 +517,150 @@ body {
     background: #FFFFFF;
 }
 
-/* Selector de Cliente */
-.customer-select-bar {
-    padding: 12px 16px;
+/* Barra de Control Unificada: Modalidad de Servicio y Cliente */
+.comanda-control-bar {
+    padding: 8px 12px;
     background: #F8FAFC;
-    border-bottom: 1px solid var(--border-color);
+    border-bottom: 1.5px solid #E2E8F0;
     display: flex;
-    gap: 8px;
     align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    flex-shrink: 0;
 }
 
-.customer-select-bar select {
+.order-type-group {
+    display: inline-flex;
+    gap: 3px;
+    background: #F1F5F9;
+    padding: 3px;
+    border-radius: 8px;
+    border: 1.5px solid #CBD5E1;
+}
+
+.type-btn {
+    padding: 5px 11px;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 800;
+    color: #64748B;
+    background: transparent;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    white-space: nowrap;
+    user-select: none;
+}
+
+.type-btn:hover {
+    color: #0F172A;
+    background: rgba(255, 255, 255, 0.85);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.type-btn:active {
+    transform: scale(0.96);
+}
+
+.type-btn.active {
+    background: linear-gradient(135deg, #EA580C 0%, #C2410C 100%);
+    color: #FFFFFF;
+    box-shadow: 0 2px 7px rgba(234, 88, 12, 0.4);
+    border-color: #EA580C;
+    transform: translateY(-1px);
+}
+
+.customer-select-inline {
+    display: flex;
+    gap: 5px;
+    align-items: center;
     flex: 1;
-    padding: 8px 10px;
-    border: 1px solid var(--border-color);
+    min-width: 0;
+}
+
+.customer-select-inline select {
+    flex: 1;
+    min-width: 0;
+    padding: 6px 8px;
+    border: 1.5px solid #CBD5E1;
     border-radius: var(--radius-sm);
-    font-size: 0.85rem;
-    outline: none;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: #1E293B;
     background: #FFFFFF;
+    outline: none;
+    text-overflow: ellipsis;
+    transition: border-color 0.2s;
+}
+
+.customer-select-inline select:focus {
+    border-color: var(--primary-orange);
+    box-shadow: 0 0 0 3px rgba(234, 88, 12, 0.15);
+}
+
+.btn-new-client-pill {
+    padding: 6px 12px;
+    background: linear-gradient(135deg, #EA580C 0%, #C2410C 100%);
+    color: #FFFFFF;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-size: 0.8rem;
+    font-weight: 800;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    flex-shrink: 0;
+    box-shadow: 0 2px 5px rgba(234, 88, 12, 0.3);
+}
+
+.btn-new-client-pill:hover {
+    transform: translateY(-1.5px);
+    box-shadow: 0 4px 10px rgba(234, 88, 12, 0.45);
+    filter: brightness(1.08);
+}
+
+.btn-new-client-pill:active {
+    transform: translateY(0) scale(0.97);
 }
 
 .btn-small {
-    padding: 8px 12px;
+    padding: 6px 12px;
     background: var(--primary-orange);
     color: #FFFFFF;
     border: none;
     border-radius: var(--radius-sm);
     font-size: 0.8rem;
-    font-weight: 600;
+    font-weight: 700;
     cursor: pointer;
     white-space: nowrap;
 }
 
-/* Tabla del Carrito */
+/* Tabla de la Comanda - Amplia, Legible, Cómoda y con Scrollbar Permanente */
 .cart-list-wrap {
-    flex: 1;
-    overflow-y: auto;
-    padding: 8px 16px;
-    min-height: 180px;
+    flex: 1 1 0;
+    min-height: 250px;
+    overflow-y: scroll;
+    overflow-x: hidden;
+    padding: 6px 12px;
+    background: #FFFFFF;
+    scrollbar-gutter: stable;
+    scrollbar-width: thin;
+    scrollbar-color: var(--primary-orange) #F1F5F9;
+}
+
+.cart-list-wrap::-webkit-scrollbar {
+    width: 8px;
+}
+.cart-list-wrap::-webkit-scrollbar-track {
+    background: #F8FAFC;
+}
+.cart-list-wrap::-webkit-scrollbar-thumb {
+    background: #CBD5E1;
+    border-radius: 4px;
+}
+.cart-list-wrap::-webkit-scrollbar-thumb:hover {
+    background: var(--primary-orange);
 }
 
 .cart-table {
@@ -485,45 +669,72 @@ body {
 }
 
 .cart-table th {
-    font-size: 0.75rem;
+    font-size: 0.78rem;
+    font-weight: 800;
     text-transform: uppercase;
-    color: var(--text-secondary);
-    padding: 8px 4px;
+    letter-spacing: 0.4px;
+    color: #475569;
+    padding: 8px 6px;
     text-align: left;
-    border-bottom: 1.5px solid var(--border-color);
+    border-bottom: 2px solid #CBD5E1;
+    background: #FFFFFF;
+    position: sticky;
+    top: 0;
+    z-index: 2;
 }
 
-.cart-table td {
-    padding: 10px 4px;
-    border-bottom: 1px solid #F1F5F9;
-    font-size: 0.88rem;
+.cart-item-row td {
+    padding: 10px 6px;
+    border-bottom: 1px solid #E2E8F0;
     vertical-align: middle;
 }
 
+.cart-item-row:hover td {
+    background: #FFFDF9;
+}
+
 .cart-item-title {
-    font-weight: 600;
-    color: var(--text-primary);
+    font-size: 1.02rem;
+    font-weight: 800;
+    color: #0F172A;
+    line-height: 1.3;
+    margin-bottom: 3px;
+    word-break: break-word;
+}
+
+.cart-item-unit-price {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: #475569;
+    background: #F1F5F9;
+    border: 1px solid #E2E8F0;
+    padding: 1px 7px;
+    border-radius: 4px;
+    display: inline-block;
 }
 
 .cart-qty-ctrl {
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 6px;
 }
 
 .qty-btn {
     background: #F1F5F9;
-    border: 1px solid #CBD5E1;
-    width: 24px;
-    height: 24px;
-    border-radius: 4px;
+    border: 1.5px solid #CBD5E1;
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-weight: bold;
+    font-weight: 900;
+    font-size: 1.05rem;
     cursor: pointer;
-    color: var(--text-primary);
-    transition: all 0.1s;
+    color: #0F172A;
+    transition: all 0.15s;
+    user-select: none;
 }
 
 .qty-btn:hover {
@@ -533,132 +744,176 @@ body {
 }
 
 .qty-display {
-    font-weight: 700;
-    min-width: 18px;
+    font-weight: 900;
+    font-size: 1.05rem;
+    min-width: 22px;
     text-align: center;
+    color: #0F172A;
+}
+
+.cart-item-price-col {
+    font-size: 1.08rem;
+    font-weight: 900;
+    color: #16A34A;
+    text-align: right;
+    white-space: nowrap;
 }
 
 .cart-del-btn {
     background: transparent;
     border: none;
-    color: var(--text-muted);
+    color: #94A3B8;
     cursor: pointer;
-    font-size: 1rem;
-    transition: color 0.2s;
+    font-size: 1.35rem;
+    line-height: 1;
+    padding: 0 4px;
+    font-weight: 700;
+    transition: color 0.15s;
 }
 
 .cart-del-btn:hover {
-    color: var(--danger);
+    color: #EF4444;
 }
 
-/* Totales Financieros */
+/* Estado Comanda Vacía */
+.cart-empty-placeholder {
+    text-align: center;
+    padding: 36px 14px !important;
+    color: #94A3B8;
+}
+
+.empty-icon-wrap {
+    margin-bottom: 8px;
+}
+
+.empty-title {
+    font-size: 1.02rem;
+    font-weight: 800;
+    color: #64748B;
+    margin-bottom: 4px;
+}
+
+.empty-sub {
+    font-size: 0.82rem;
+    color: #94A3B8;
+}
+
+/* Totales Financieros y Cobro */
 .billing-footer {
-    padding: 14px 16px;
+    padding: 8px 12px;
     background: #FFFDF9;
     border-top: 2px solid var(--border-orange);
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 6px;
+    margin-top: auto;
+    flex-shrink: 0;
 }
 
 .totals-summary {
     background: #FFFFFF;
-    border: 1px solid var(--border-orange);
+    border: 1.5px solid var(--border-orange);
     border-radius: var(--radius-sm);
-    padding: 10px 14px;
+    padding: 6px 12px;
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 2px;
 }
 
 .totals-summary .row {
     display: flex;
     justify-content: space-between;
-    font-size: 0.88rem;
-    color: var(--text-secondary);
+    font-size: 0.85rem;
+    color: #475569;
+    font-weight: 600;
 }
 
 .totals-summary .row.total-row {
-    border-top: 1.5px dashed var(--border-color);
-    padding-top: 6px;
+    border-top: 1.5px dashed var(--border-orange);
+    padding-top: 4px;
     margin-top: 2px;
     font-size: 1.25rem;
     font-weight: 900;
     color: var(--primary-orange);
 }
 
-/* Selector de Métodos de Pago */
-.payment-selector-title {
-    font-size: 0.8rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    color: var(--text-secondary);
-    letter-spacing: 0.5px;
-}
-
 .payment-toggle-group {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 8px;
+    gap: 6px;
 }
 
 .pay-toggle-btn {
-    padding: 10px;
+    padding: 8px 12px;
     background: #F8FAFC;
-    border: 2px solid var(--border-color);
+    border: 1.5px solid var(--border-color);
     border-radius: var(--radius-sm);
-    font-size: 0.9rem;
-    font-weight: 700;
+    font-size: 0.84rem;
+    font-weight: 800;
     color: var(--text-secondary);
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 6px;
-    transition: all 0.2s;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    user-select: none;
 }
 
 .pay-toggle-btn:hover {
-    border-color: var(--amber-gold);
+    border-color: var(--primary-orange);
+    color: var(--primary-orange);
+    transform: translateY(-1.5px);
+    box-shadow: 0 3px 6px rgba(234, 88, 12, 0.15);
+}
+
+.pay-toggle-btn:active {
+    transform: scale(0.97);
 }
 
 .pay-toggle-btn.active {
     border-color: var(--primary-orange);
-    background: #FFF7ED;
+    background: linear-gradient(135deg, #FFF7ED 0%, #FFEDD5 100%);
     color: var(--primary-orange);
+    box-shadow: 0 2px 6px rgba(234, 88, 12, 0.25);
+    font-weight: 900;
+    transform: translateY(-1px);
 }
 
-/* Sección Efectivo */
+/* Sección Efectivo Compacta en 1 Fila */
 .cash-details-box {
     background: #F8FAFC;
     border: 1px solid var(--border-color);
     border-radius: var(--radius-sm);
-    padding: 10px;
+    padding: 6px 10px;
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
     gap: 8px;
 }
 
 .input-row {
     display: flex;
-    justify-content: space-between;
     align-items: center;
-    gap: 10px;
+    gap: 6px;
+    flex: 1;
 }
 
 .input-row label {
-    font-size: 0.85rem;
-    font-weight: 600;
-    color: var(--text-secondary);
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #475569;
+    white-space: nowrap;
 }
 
 .input-row input {
-    width: 140px;
-    padding: 8px 10px;
+    width: 95px;
+    padding: 5px 8px;
     border: 1.5px solid var(--border-color);
     border-radius: var(--radius-sm);
-    font-size: 1rem;
-    font-weight: 700;
+    font-size: 0.95rem;
+    font-weight: 800;
     text-align: right;
     outline: none;
 }
@@ -669,23 +924,25 @@ body {
 
 .change-display {
     display: flex;
-    justify-content: space-between;
     align-items: center;
+    gap: 6px;
     background: var(--success-bg);
     border: 1px solid #86EFAC;
-    padding: 6px 10px;
+    padding: 4px 8px;
     border-radius: var(--radius-sm);
+    white-space: nowrap;
 }
 
 .change-display span {
-    font-size: 0.85rem;
+    font-size: 0.8rem;
     font-weight: 700;
     color: var(--success);
 }
 
 .change-display strong {
-    font-size: 1.1rem;
+    font-size: 1rem;
     color: var(--success);
+    font-weight: 900;
 }
 
 /* Sección Transferencia Bancaria (Logos oficiales BAC, Banpro, Lafise, BDF, Ficohsa) */
@@ -740,6 +997,15 @@ body {
 .bank-name {
     font-size: 0.7rem;
     font-weight: 800;
+}
+
+.bank-logo-img {
+    height: 24px;
+    max-height: 24px;
+    max-width: 90%;
+    object-fit: contain;
+    display: block;
+    margin: 0 auto;
 }
 
 .ref-input-wrap {
@@ -1134,105 +1400,845 @@ body {
     background: #0F172A;
 }
 
-/* =========================================================
-   PÁGINA DE INICIO DE SESIÓN (LOGIN)
-   ========================================================= */
-.login-body {
-    background: radial-gradient(circle at top, #2D1808 0%, #111827 100%);
+/* Sección de Código QR en Comprobantes y Modales */
+.factura-qr-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 12px;
+    background: #FFFFFF;
+    border-radius: 12px;
+    border: 1px solid #E2E8F0;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.qr-canvas-wrap {
     display: flex;
     align-items: center;
     justify-content: center;
-    min-height: 100vh;
-    padding: 20px;
-}
-
-.login-card {
     background: #FFFFFF;
-    border-radius: var(--radius-lg);
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-    width: 100%;
-    max-width: 420px;
-    overflow: hidden;
-    border: 2px solid var(--amber-gold);
+    padding: 8px;
+    border-radius: 10px;
+    border: 1.5px solid #F1F5F9;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
 }
 
-.login-brand-header {
-    background: #111827;
-    padding: 24px 20px;
+.qr-canvas-wrap svg,
+.qr-canvas-wrap img {
+    display: block;
+    margin: 0 auto;
+    border-radius: 6px;
+    image-rendering: pixelated;
+}
+
+.qr-caption {
+    font-size: 0.74rem;
+    color: #475569;
     text-align: center;
-    border-bottom: 3px solid var(--primary-orange);
+    line-height: 1.3;
 }
 
-.login-logo-img {
-    width: 84px;
-    height: 84px;
-    border-radius: 50%;
-    border: 3px solid var(--amber-gold);
-    object-fit: cover;
-    margin-bottom: 10px;
-    background: #000;
+/* Sincronización POS con Módulo de Delivery */
+.pos-delivery-sync-badge {
+    margin-top: 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: #ECFDF5;
+    border: 1px solid #A7F3D0;
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-size: 0.74rem;
+    color: #065F46;
+    font-weight: 700;
 }
 
-.login-brand-header h2 {
-    color: var(--amber-gold);
+.btn-delivery-contraentrega {
+    background: linear-gradient(135deg, #0F172A, #1E293B);
+    color: #F8FAFC;
+    font-weight: 700;
+    font-size: 0.78rem;
+    padding: 8px 10px;
+    width: 100%;
+    border-radius: 6px;
+    border: 1px solid #334155;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: all 0.2s ease;
+    margin-top: 6px;
+}
+
+.btn-delivery-contraentrega:hover {
+    background: #EA580C;
+    border-color: #F59E0B;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 10px rgba(234, 88, 12, 0.25);
+}
+
+.badge-count-pill {
+    background: #EA580C;
+    color: #FFFFFF;
+    font-size: 0.7rem;
+    font-weight: 800;
+    padding: 1px 6px;
+    border-radius: 10px;
+    margin-left: 4px;
+    box-shadow: 0 1px 4px rgba(234, 88, 12, 0.4);
+}
+
+.badge-pos {
+    background: #FEF3C7;
+    color: #92400E;
+    border: 1px solid #FCD34D;
+}
+
+
+
+/* =========================================================
+   MÓDULO DE DELIVERY & PEDIDOS A DOMICILIO
+   ========================================================= */
+.delivery-container {
+    padding: 20px 24px;
+    max-width: 1600px;
+    margin: 0 auto;
+}
+
+.delivery-top-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 18px;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.delivery-top-bar h2 {
     font-size: 1.4rem;
     font-weight: 900;
+    color: var(--text-primary);
 }
 
-.login-brand-header p {
-    color: #94A3B8;
-    font-size: 0.8rem;
-    margin-top: 4px;
+.section-desc {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin-top: 2px;
 }
 
-.login-form-body {
-    padding: 24px;
+.delivery-actions-wrap {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.delivery-kpis-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.del-kpi-card {
+    background: #FFFFFF;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 14px 16px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    text-align: center;
+}
+
+.del-kpi-label {
+    display: block;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+}
+
+.del-kpi-val {
+    font-size: 1.8rem;
+    font-weight: 900;
+    color: var(--text-primary);
+}
+
+.delivery-kanban-board {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(240px, 1fr));
+    gap: 14px;
+    align-items: start;
+    min-height: 560px;
+    overflow-x: auto;
+    padding-bottom: 15px;
+}
+
+.kanban-col {
+    background: #F8FAFC;
+    border: 1.5px solid #E2E8F0;
+    border-radius: var(--radius-md);
+    overflow: hidden;
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    min-height: 480px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
 }
 
-.quick-roles-helper {
-    background: #FFFBEB;
-    border: 1px dashed var(--amber-gold);
+.kanban-col-header {
+    padding: 10px 14px;
+    font-weight: 800;
+    font-size: 0.85rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 2.5px solid transparent;
+}
+
+.col-pendiente { background: #FEF3C7; color: #92400E; border-bottom-color: #F59E0B; }
+.col-preparacion { background: #FFEDD5; color: #9A3412; border-bottom-color: #EA580C; }
+.col-listo { background: #EFF6FF; color: #1E40AF; border-bottom-color: #3B82F6; }
+.col-camino { background: #F3E8FF; color: #6B21A8; border-bottom-color: #A855F7; }
+.col-entregado { background: #ECFDF5; color: #065F46; border-bottom-color: #10B981; }
+
+.col-count-badge {
+    background: rgba(0, 0, 0, 0.08);
+    border-radius: 9999px;
+    padding: 2px 8px;
+    font-size: 0.75rem;
+    font-weight: 800;
+}
+
+.kanban-cards-wrap {
     padding: 10px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    flex: 1;
+    min-height: 120px;
+}
+
+.delivery-card {
+    background: #FFFFFF;
+    border: 1.5px solid #CBD5E1;
     border-radius: var(--radius-sm);
+    padding: 12px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.delivery-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.card-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+}
+
+.card-pedido-num {
+    font-size: 0.95rem;
+    font-weight: 900;
+    color: var(--primary-orange);
+}
+
+.card-origen-badge {
+    padding: 2px 7px;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    font-weight: 800;
+    letter-spacing: 0.4px;
+}
+
+.badge-wa { background: #DCFCE7; color: #166534; }
+.badge-tel { background: #E0F2FE; color: #0369A1; }
+
+.card-cliente-title {
+    font-size: 0.95rem;
+    font-weight: 800;
+    color: #0F172A;
+    margin-bottom: 2px;
+}
+
+.card-tel {
     font-size: 0.78rem;
+    color: #475569;
+    margin-bottom: 5px;
+}
+
+.card-tel a {
+    color: #0284C7;
+    text-decoration: none;
+    font-weight: 700;
+}
+
+.card-direccion {
+    font-size: 0.8rem;
+    color: #334155;
+    line-height: 1.35;
+    background: #F1F5F9;
+    padding: 6px 8px;
+    border-radius: 4px;
+    margin-bottom: 6px;
+    word-break: break-word;
+}
+
+.card-repartidor {
+    font-size: 0.78rem;
+    color: #334155;
+    background: #FAF5FF;
+    border: 1px solid #E9D5FF;
+    padding: 4px 6px;
+    border-radius: 4px;
+    margin-bottom: 6px;
+}
+
+.card-notas {
+    font-size: 0.75rem;
     color: #92400E;
+    background: #FEF3C7;
+    border: 1px solid #FDE68A;
+    padding: 4px 6px;
+    border-radius: 4px;
+    margin-bottom: 6px;
+    font-style: italic;
+}
+
+.card-items-list {
+    font-size: 0.78rem;
+    color: #334155;
+    border-top: 1px dashed #CBD5E1;
+    border-bottom: 1px dashed #CBD5E1;
+    padding: 6px 0;
+    margin-bottom: 8px;
+}
+
+.card-item-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 2px;
+}
+
+.card-totales-bar {
+    font-size: 0.75rem;
+    color: #64748B;
+    margin-bottom: 8px;
+    text-align: right;
+}
+
+.card-total-val {
+    font-size: 1.05rem;
+    font-weight: 900;
+    color: #16A34A;
+}
+
+.card-pago-label {
+    font-size: 0.72rem;
+    color: #475569;
+    display: block;
+    margin-top: 2px;
+}
+
+.card-controls-grid {
     display: flex;
     flex-direction: column;
     gap: 6px;
+    margin-top: 8px;
 }
 
-.quick-roles-btn-row {
-    display: flex;
-    gap: 8px;
-}
-
-.btn-quick-fill {
-    flex: 1;
-    background: #FFFFFF;
-    border: 1px solid var(--border-orange);
-    padding: 4px;
-    border-radius: 4px;
-    font-size: 0.75rem;
-    font-weight: 700;
-    color: var(--primary-orange);
+.btn-action-status {
+    width: 100%;
+    padding: 10px 14px;
+    font-size: 0.85rem;
+    font-weight: 800;
+    border-radius: 8px;
+    border: none;
     cursor: pointer;
+    color: #FFFFFF;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    letter-spacing: 0.3px;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    user-select: none;
+    outline: none;
 }
 
-.btn-quick-fill:hover {
-    background: var(--primary-orange);
+.btn-start-prep {
+    background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);
+    box-shadow: 0 3px 10px rgba(217, 119, 6, 0.35);
+}
+
+.btn-start-prep:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(217, 119, 6, 0.5);
+    filter: brightness(1.08);
+}
+
+.btn-start-prep:active {
+    transform: translateY(0) scale(0.98);
+}
+
+.btn-mark-ready {
+    background: linear-gradient(135deg, #0D9488 0%, #0F766E 100%);
+    box-shadow: 0 3px 10px rgba(13, 148, 136, 0.35);
+}
+
+.btn-mark-ready:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(13, 148, 136, 0.5);
+    filter: brightness(1.08);
+}
+
+.btn-mark-ready:active {
+    transform: translateY(0) scale(0.98);
+}
+
+.btn-dispatch {
+    background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%);
+    box-shadow: 0 3px 10px rgba(37, 99, 235, 0.35);
+}
+
+.btn-dispatch:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(37, 99, 235, 0.5);
+    filter: brightness(1.08);
+}
+
+.btn-dispatch:active {
+    transform: translateY(0) scale(0.98);
+}
+
+.btn-delivered {
+    background: linear-gradient(135deg, #16A34A 0%, #15803D 100%);
+    box-shadow: 0 3px 10px rgba(22, 163, 74, 0.35);
+}
+
+.btn-delivered:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(22, 163, 74, 0.5);
+    filter: brightness(1.08);
+}
+
+.btn-delivered:active {
+    transform: translateY(0) scale(0.98);
+}
+
+.badge-status-completed {
+    display: block;
+    text-align: center;
+    padding: 8px 12px;
+    background: #DCFCE7;
+    color: #166534;
+    border: 1.5px solid #86EFAC;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 800;
+}
+
+/* Acciones Secundarias de Tarjeta Delivery */
+.card-footer-actions {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-top: 8px;
+}
+
+.card-btn-mini {
+    flex: 1 1 calc(50% - 6px);
+    padding: 7px 10px;
+    font-size: 0.76rem;
+    font-weight: 800;
+    border-radius: 7px;
+    cursor: pointer;
+    text-align: center;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    user-select: none;
+}
+
+.card-btn-mini.btn-comanda-cocina {
+    background: #FFF7ED;
+    border: 1.5px solid #FDBA74;
+    color: #C2410C;
+    box-shadow: 0 1px 3px rgba(194, 65, 12, 0.1);
+}
+
+.card-btn-mini.btn-comanda-cocina:hover {
+    background: #FFEDD5;
+    border-color: #EA580C;
+    transform: translateY(-1.5px);
+    box-shadow: 0 4px 8px rgba(194, 65, 12, 0.22);
+}
+
+.card-btn-mini.btn-comanda-cocina:active {
+    transform: scale(0.97);
+}
+
+.card-btn-mini.btn-factura-qr {
+    background: #EFF6FF;
+    border: 1.5px solid #93C5FD;
+    color: #1D4ED8;
+    box-shadow: 0 1px 3px rgba(29, 78, 216, 0.1);
+}
+
+.card-btn-mini.btn-factura-qr:hover {
+    background: #DBEAFE;
+    border-color: #3B82F6;
+    transform: translateY(-1.5px);
+    box-shadow: 0 4px 8px rgba(29, 78, 216, 0.22);
+}
+
+.card-btn-mini.btn-factura-qr:active {
+    transform: scale(0.97);
+}
+
+.card-btn-mini.btn-ficha-moto {
+    background: #F8FAFC;
+    border: 1.5px solid #CBD5E1;
+    color: #334155;
+}
+
+.card-btn-mini.btn-ficha-moto:hover {
+    background: #E2E8F0;
+    border-color: #94A3B8;
+    transform: translateY(-1.5px);
+}
+
+.card-btn-wa {
+    width: 100%;
+    padding: 8px 12px;
+    background: linear-gradient(135deg, #22C55E 0%, #16A34A 100%);
     color: #FFFFFF;
+    border: none;
+    border-radius: 7px;
+    font-size: 0.8rem;
+    font-weight: 800;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    box-shadow: 0 3px 8px rgba(34, 197, 94, 0.35);
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    margin-top: 2px;
+}
+
+.card-btn-wa:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 14px rgba(34, 197, 94, 0.48);
+    filter: brightness(1.06);
+}
+
+.card-btn-wa:active {
+    transform: translateY(0) scale(0.98);
+}
+
+/* Selector Delivery en POS */
+.pos-delivery-box {
+    background: #EFF6FF;
+    border: 1.5px solid #93C5FD;
+    border-radius: var(--radius-sm);
+    padding: 8px 10px;
+    margin-bottom: 8px;
+}
+
+.del-section-title {
+    font-size: 0.85rem;
+    font-weight: 800;
+    color: var(--primary-orange);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 1.5px solid #FED7AA;
+    padding-bottom: 4px;
+    margin-bottom: 10px;
+}
+
+.del-form-grid {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
 }
 
 /* =========================================================
-   ESTILOS DE IMPRESIÓN DIRECTA PARA TICKET ESC/POS (RF-04)
+   ESTILOS DE FACTURA COMERCIAL FORMAL CON QR
+   ========================================================= */
+.comprobante-tabs-bar {
+    display: flex;
+    gap: 6px;
+    background: #F1F5F9;
+    padding: 4px;
+    border-radius: 6px;
+    margin-bottom: 12px;
+}
+
+.btn-comprobante-tab {
+    flex: 1;
+    padding: 8px;
+    border: none;
+    background: transparent;
+    font-weight: 700;
+    font-size: 0.82rem;
+    border-radius: 4px;
+    cursor: pointer;
+    color: #64748B;
+    transition: all 0.15s;
+}
+
+.btn-comprobante-tab.active {
+    background: #FFFFFF;
+    color: #0F172A;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.factura-comercial-sheet {
+    background: #FFFFFF;
+    border: 1.5px solid #CBD5E1;
+    border-radius: 8px;
+    padding: 24px;
+    color: #1E293B;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.factura-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    border-bottom: 2.5px solid #EA580C;
+    padding-bottom: 14px;
+    margin-bottom: 16px;
+}
+
+.factura-logo-wrap {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.factura-logo-img {
+    width: 56px;
+    height: 56px;
+    border-radius: 8px;
+    object-fit: cover;
+    border: 2px solid #F59E0B;
+}
+
+.factura-empresa-titulo {
+    font-size: 1.15rem;
+    font-weight: 900;
+    color: #0F172A;
+    margin: 0;
+}
+
+.factura-empresa-sub {
+    font-size: 0.78rem;
+    color: #64748B;
+    margin: 2px 0 0;
+}
+
+.factura-fiscal-box {
+    text-align: right;
+}
+
+.factura-badge {
+    display: inline-block;
+    background: #EA580C;
+    color: #FFFFFF;
+    font-size: 0.75rem;
+    font-weight: 800;
+    padding: 3px 9px;
+    border-radius: 4px;
+    letter-spacing: 0.5px;
+}
+
+.factura-num {
+    font-size: 1.2rem;
+    font-weight: 900;
+    color: #0F172A;
+    margin-top: 4px;
+}
+
+.factura-fecha {
+    font-size: 0.75rem;
+    color: #64748B;
+}
+
+.factura-cliente-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+    background: #F8FAFC;
+    border: 1px solid #E2E8F0;
+    border-radius: 6px;
+    padding: 10px 14px;
+    margin-bottom: 14px;
+    font-size: 0.8rem;
+}
+
+.fac-label {
+    display: block;
+    font-size: 0.68rem;
+    font-weight: 800;
+    color: #64748B;
+    letter-spacing: 0.5px;
+}
+
+.factura-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 14px;
+    font-size: 0.85rem;
+}
+
+.factura-table th {
+    background: #F1F5F9;
+    border-bottom: 2px solid #CBD5E1;
+    padding: 8px;
+    text-align: left;
+    font-size: 0.78rem;
+    font-weight: 800;
+    color: #475569;
+}
+
+.factura-table td {
+    border-bottom: 1px solid #E2E8F0;
+    padding: 8px;
+}
+
+.factura-resumen-grid {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 2px solid #E2E8F0;
+    padding-top: 12px;
+    margin-bottom: 14px;
+    gap: 16px;
+}
+
+.factura-qr-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+
+.qr-canvas-wrap {
+    width: 110px;
+    height: 110px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #FFFFFF;
+    padding: 4px;
+    border: 1px solid #CBD5E1;
+    border-radius: 6px;
+}
+
+.qr-canvas-wrap canvas, .qr-canvas-wrap img {
+    max-width: 100%;
+    max-height: 100%;
+}
+
+.qr-caption {
+    font-size: 0.68rem;
+    color: #64748B;
+    margin-top: 4px;
+}
+
+.factura-totales-col {
+    min-width: 220px;
+    text-align: right;
+}
+
+.fac-total-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.82rem;
+    color: #475569;
+    margin-bottom: 4px;
+}
+
+.fac-grand-total {
+    font-size: 1.15rem;
+    font-weight: 900;
+    color: #0F172A;
+    border-top: 2px solid #CBD5E1;
+    padding-top: 6px;
+    margin-top: 6px;
+}
+
+.fac-grand-total strong {
+    color: #16A34A;
+}
+
+.fac-pago-info {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #0284C7;
+    margin-top: 4px;
+}
+
+.factura-footer-msg {
+    text-align: center;
+    border-top: 1px dashed #CBD5E1;
+    padding-top: 10px;
+    font-size: 0.78rem;
+    color: #64748B;
+}
+
+.btn-thermal {
+    background: #1E293B;
+    color: #FFFFFF;
+    border: none;
+    border-radius: 6px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.btn-thermal:hover {
+    background: #0F172A;
+}
+
+.btn-whatsapp {
+    background: #25D366;
+    color: #FFFFFF;
+    text-decoration: none;
+    padding: 8px 14px;
+    border-radius: 6px;
+    font-weight: 700;
+    font-size: 0.85rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s;
+}
+
+.btn-whatsapp:hover {
+    background: #1EBE5D;
+}
+
+/* =========================================================
+   ESTILOS DE IMPRESIÓN DIRECTA MULTI-FORMATO (TICKET Y FACTURA)
    ========================================================= */
 @media print {
     body * {
         visibility: hidden;
     }
+
     #printable-thermal-ticket, #printable-thermal-ticket * {
         visibility: visible;
     }
@@ -1246,5 +2252,595 @@ body {
         font-family: 'Courier New', monospace;
         font-size: 12px;
         color: #000;
+    }
+
+    #vista-factura-comercial, #vista-factura-comercial * {
+        visibility: visible;
+    }
+    #vista-factura-comercial {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        border: none;
+        box-shadow: none;
+        padding: 0;
+    }
+}
+
+/* =========================================================
+   REPORTES AVANZADOS & TARJETAS DE MENSAJES FINANCIEROS
+   ========================================================= */
+.btn-periodo {
+    background: #F1F5F9;
+    color: #475569;
+    border: 1px solid #CBD5E1;
+    padding: 7px 14px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-periodo:hover {
+    background: #E2E8F0;
+    color: #0F172A;
+    border-color: #94A3B8;
+    transform: translateY(-1px);
+}
+
+.btn-periodo.active {
+    background: linear-gradient(135deg, var(--primary-orange), #C2410C);
+    color: #FFFFFF;
+    border-color: #EA580C;
+    box-shadow: 0 2px 6px rgba(234, 88, 12, 0.35);
+}
+
+.insight-card {
+    background: #FFFFFF;
+    border: 1px solid #E2E8F0;
+    border-radius: 10px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    border-left: 5px solid #64748B;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+}
+
+.insight-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 14px rgba(0, 0, 0, 0.08);
+}
+
+.insight-card.success {
+    border-left-color: #16A34A;
+}
+
+.insight-card.warning {
+    border-left-color: #D97706;
+}
+
+.insight-card.primary {
+    border-left-color: #0284C7;
+}
+
+.insight-card.info {
+    border-left-color: #6366F1;
+}
+
+.insight-card-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.insight-card-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #0F172A;
+    margin: 0;
+}
+
+.insight-card-body {
+    font-size: 0.85rem;
+    color: #475569;
+    line-height: 1.45;
+    margin-bottom: 12px;
+}
+
+.insight-card-action {
+    background: #F8FAFC;
+    border: 1px dashed #CBD5E1;
+    border-radius: 6px;
+    padding: 8px 10px;
+    font-size: 0.8rem;
+    color: #1E293B;
+}
+
+.insight-card-action strong {
+    color: #0F172A;
+}
+
+/* =========================================================
+   LOGIN INTERACTIVO - EXPERIENCIA MULTIMEDIA & BRANDING
+   El Gustazo • Sierra Maestra, Managua
+   ========================================================= */
+
+.login-body {
+    min-height: 100vh;
+    background: linear-gradient(135deg, #090D16 0%, #17110C 30%, #0B1120 70%, #1A1208 100%);
+    background-size: 300% 300%;
+    animation: gradientShift 14s ease infinite;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 16px;
+    position: relative;
+    overflow-x: hidden;
+}
+
+@keyframes gradientShift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+/* Orbes de luz ambiental dinámicos */
+.ambient-glow-orb {
+    position: fixed;
+    border-radius: 50%;
+    filter: blur(100px);
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.45;
+}
+
+.ambient-glow-orb.orb-1 {
+    width: 460px;
+    height: 460px;
+    top: -80px;
+    left: -80px;
+    background: radial-gradient(circle, #EA580C 0%, rgba(234, 88, 12, 0) 70%);
+    animation: floatOrb1 16s ease-in-out infinite alternate;
+}
+
+.ambient-glow-orb.orb-2 {
+    width: 520px;
+    height: 520px;
+    bottom: -100px;
+    right: -100px;
+    background: radial-gradient(circle, #F59E0B 0%, rgba(245, 158, 11, 0) 70%);
+    animation: floatOrb2 20s ease-in-out infinite alternate;
+}
+
+@keyframes floatOrb1 {
+    0% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(60px, 40px) scale(1.1); }
+    100% { transform: translate(30px, 80px) scale(0.95); }
+}
+
+@keyframes floatOrb2 {
+    0% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(-50px, -40px) scale(1.15); }
+    100% { transform: translate(-80px, -20px) scale(0.9); }
+}
+
+/* Contenedor Dual Showcase */
+.login-showcase-container {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 1020px;
+    min-height: 610px;
+    display: grid;
+    grid-template-columns: 1.15fr 1fr;
+    background: #FFFFFF;
+    border-radius: 24px;
+    overflow: hidden;
+    box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.65), 0 0 35px rgba(245, 158, 11, 0.2);
+    border: 1.5px solid rgba(245, 158, 11, 0.35);
+}
+
+/* Panel Izquierdo: Carrusel de Marca */
+.login-carousel-panel {
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    background: #0B1120;
+}
+
+.carousel-slides-wrap {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    min-height: 520px;
+}
+
+.carousel-slide {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    transform: scale(1.05);
+    transition: opacity 0.85s cubic-bezier(0.4, 0, 0.2, 1), transform 0.85s cubic-bezier(0.4, 0, 0.2, 1);
+    pointer-events: none;
+}
+
+.carousel-slide.active {
+    opacity: 1;
+    transform: scale(1);
+    pointer-events: auto;
+}
+
+.carousel-slide-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.carousel-slide-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to top, rgba(11, 17, 32, 0.95) 0%, rgba(11, 17, 32, 0.55) 45%, rgba(11, 17, 32, 0.15) 80%, rgba(11, 17, 32, 0.25) 100%);
+}
+
+.carousel-slide-content {
+    position: absolute;
+    bottom: 74px;
+    left: 0;
+    right: 0;
+    padding: 0 32px;
+    z-index: 2;
+}
+
+.carousel-tag-pill {
+    display: inline-block;
+    background: rgba(245, 158, 11, 0.22);
+    border: 1px solid #F59E0B;
+    color: #FBBF24;
+    font-size: 0.72rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    padding: 5px 12px;
+    border-radius: 20px;
+    margin-bottom: 10px;
+    backdrop-filter: blur(4px);
+}
+
+.carousel-slide-title {
+    font-size: 1.55rem;
+    font-weight: 800;
+    color: #FFFFFF;
+    line-height: 1.25;
+    margin-bottom: 8px;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.7);
+}
+
+.carousel-slide-desc {
+    font-size: 0.9rem;
+    color: #E2E8F0;
+    line-height: 1.5;
+    text-shadow: 0 1px 5px rgba(0, 0, 0, 0.6);
+}
+
+.carousel-controls-bar {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    z-index: 5;
+}
+
+.carousel-dots {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.carousel-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.35);
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.carousel-dot:hover {
+    background: rgba(255, 255, 255, 0.75);
+}
+
+.carousel-dot.active {
+    width: 28px;
+    background: linear-gradient(90deg, #F59E0B, #EA580C);
+    box-shadow: 0 0 10px rgba(245, 158, 11, 0.7);
+}
+
+.carousel-nav-arrows {
+    display: flex;
+    gap: 8px;
+}
+
+.carousel-arrow-btn {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: rgba(15, 23, 42, 0.65);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    color: #FFFFFF;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    backdrop-filter: blur(6px);
+    transition: all 0.2s ease;
+}
+
+.carousel-arrow-btn:hover {
+    background: #EA580C;
+    border-color: #F59E0B;
+    transform: scale(1.08);
+    box-shadow: 0 0 12px rgba(234, 88, 12, 0.5);
+}
+
+/* Panel Derecho: Formulario Interactivo */
+.login-form-panel {
+    padding: 36px 40px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    background: #FFFFFF;
+}
+
+.login-header-interactive {
+    text-align: center;
+    margin-bottom: 18px;
+}
+
+.login-brand-logo-interactive {
+    width: 74px;
+    height: 74px;
+    border-radius: 50%;
+    border: 3px solid #F59E0B;
+    object-fit: cover;
+    margin: 0 auto 10px auto;
+    display: block;
+    box-shadow: 0 0 16px rgba(245, 158, 11, 0.35);
+    animation: logoGlowPulse 4s infinite ease-in-out;
+}
+
+@keyframes logoGlowPulse {
+    0%, 100% {
+        box-shadow: 0 0 12px rgba(245, 158, 11, 0.35);
+        transform: scale(1);
+    }
+    50% {
+        box-shadow: 0 0 24px rgba(234, 88, 12, 0.6);
+        transform: scale(1.03);
+    }
+}
+
+.login-greeting-title {
+    font-size: 1.45rem;
+    font-weight: 800;
+    color: #0F172A;
+    margin-bottom: 4px;
+    transition: color 0.3s ease;
+}
+
+.login-greeting-sub {
+    font-size: 0.8rem;
+    color: #64748B;
+    font-weight: 500;
+}
+
+/* Chips de Roles Interactivos */
+.role-chips-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 16px;
+}
+
+.role-chip-btn {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 12px;
+    border: 1.5px solid #E2E8F0;
+    background: #F8FAFC;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.22s ease;
+}
+
+.role-chip-btn:hover {
+    border-color: #F59E0B;
+    background: #FFFBEB;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(245, 158, 11, 0.15);
+}
+
+.role-chip-btn.active {
+    border-color: #EA580C;
+    background: linear-gradient(135deg, #FFF7ED 0%, #FEF3C7 100%);
+    box-shadow: 0 4px 14px rgba(234, 88, 12, 0.2);
+    transform: translateY(-1px);
+}
+
+.role-chip-icon-box {
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    background: #E2E8F0;
+    color: #64748B;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.22s ease;
+}
+
+.role-chip-btn.active .role-chip-icon-box {
+    background: linear-gradient(135deg, #EA580C, #F59E0B);
+    color: #FFFFFF;
+    box-shadow: 0 2px 8px rgba(234, 88, 12, 0.35);
+}
+
+.role-chip-title {
+    display: block;
+    font-size: 0.84rem;
+    font-weight: 700;
+    color: #1E293B;
+    line-height: 1.2;
+}
+
+.role-chip-btn.active .role-chip-title {
+    color: #EA580C;
+    font-weight: 800;
+}
+
+.role-chip-desc {
+    display: block;
+    font-size: 0.7rem;
+    color: #64748B;
+    line-height: 1.2;
+}
+
+/* Campos de Formulario y Pastillas */
+.form-group input {
+    width: 100%;
+    padding: 10px 14px;
+    border-radius: 8px;
+    border: 1.5px solid #CBD5E1;
+    font-size: 0.92rem;
+    color: #0F172A;
+    background: #FFFFFF;
+    transition: all 0.2s ease;
+}
+
+.form-group input:focus {
+    border-color: #EA580C;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(234, 88, 12, 0.18);
+}
+
+.password-requirements-checklist {
+    display: flex;
+    gap: 6px;
+    margin-top: 6px;
+    flex-wrap: wrap;
+}
+
+.pwd-req-pill {
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 12px;
+    background: #F1F5F9;
+    color: #64748B;
+    border: 1px solid #CBD5E1;
+    transition: all 0.2s ease;
+}
+
+.pwd-req-pill.valid {
+    background: #DCFCE7;
+    color: #15803D;
+    border-color: #86EFAC;
+    box-shadow: 0 1px 4px rgba(22, 163, 74, 0.15);
+}
+
+/* Botón con Glow y Shimmer */
+.btn-login-glow {
+    background: linear-gradient(135deg, #EA580C 0%, #D97706 60%, #B45309 100%);
+    color: #FFFFFF;
+    border: none;
+    border-radius: 10px;
+    padding: 12px 20px;
+    font-size: 0.98rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 6px 18px rgba(234, 88, 12, 0.38);
+    transition: all 0.25s ease;
+}
+
+.btn-login-glow::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 60%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+    transform: skewX(-25deg);
+    animation: btnShimmer 3.5s infinite;
+}
+
+@keyframes btnShimmer {
+    0%, 60% { left: -100%; }
+    100% { left: 180%; }
+}
+
+.btn-login-glow:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 24px rgba(234, 88, 12, 0.5);
+    filter: brightness(1.05);
+}
+
+.btn-login-glow:active {
+    transform: translateY(0);
+    filter: brightness(0.95);
+}
+
+/* Adaptación Responsiva */
+@media (max-width: 860px) {
+    .login-showcase-container {
+        grid-template-columns: 1fr;
+        max-width: 480px;
+        margin: 16px auto;
+    }
+
+    .login-carousel-panel {
+        height: 260px;
+        min-height: 260px;
+        border-radius: 24px 24px 0 0;
+    }
+
+    .carousel-slides-wrap {
+        min-height: 260px;
+    }
+
+    .carousel-slide-content {
+        bottom: 50px;
+        padding: 0 20px;
+    }
+
+    .carousel-slide-title {
+        font-size: 1.25rem;
+    }
+
+    .carousel-controls-bar {
+        padding: 0 20px 14px 20px;
+    }
+
+    .login-form-panel {
+        padding: 26px 20px;
     }
 }

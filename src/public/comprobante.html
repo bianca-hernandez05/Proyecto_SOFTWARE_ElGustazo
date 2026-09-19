@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Comprobante Digital - El Gustazo POS</title>
+    <link rel="stylesheet" href="css/style.css?v=2.7">
+    <style>
+        .comp-page-wrap {
+            min-height: 100vh;
+            background: #F1F5F9;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px 14px;
+        }
+
+        .comp-card {
+            background: #FFFFFF;
+            width: 100%;
+            max-width: 480px;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 0 15px rgba(245, 158, 11, 0.12);
+            border: 1px solid #E2E8F0;
+            overflow: hidden;
+        }
+
+        .comp-header {
+            background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%);
+            padding: 24px 20px;
+            text-align: center;
+            color: #FFFFFF;
+            border-bottom: 3px solid #F59E0B;
+            position: relative;
+        }
+
+        .comp-logo {
+            width: 68px;
+            height: 68px;
+            border-radius: 50%;
+            border: 2px solid #F59E0B;
+            object-fit: cover;
+            margin: 0 auto 10px;
+            display: block;
+        }
+
+        .comp-badge-verified {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            background: rgba(22, 163, 74, 0.2);
+            border: 1px solid #16A34A;
+            color: #4ADE80;
+            font-size: 0.75rem;
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: 20px;
+            margin-top: 8px;
+        }
+
+        .comp-body {
+            padding: 20px 22px;
+        }
+
+        .comp-meta-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            background: #F8FAFC;
+            padding: 12px 14px;
+            border-radius: 10px;
+            border: 1px solid #E2E8F0;
+            margin-bottom: 18px;
+            font-size: 0.84rem;
+        }
+
+        .comp-meta-item strong {
+            display: block;
+            color: #64748B;
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .comp-meta-item span {
+            color: #0F172A;
+            font-weight: 700;
+        }
+
+        .comp-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 16px;
+            font-size: 0.88rem;
+        }
+
+        .comp-table th {
+            text-align: left;
+            padding: 8px 6px;
+            color: #64748B;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            border-bottom: 1.5px solid #E2E8F0;
+        }
+
+        .comp-table td {
+            padding: 10px 6px;
+            border-bottom: 1px solid #F1F5F9;
+            color: #1E293B;
+        }
+
+        .comp-total-box {
+            background: #FFFBEB;
+            border: 1.5px dashed #F59E0B;
+            border-radius: 12px;
+            padding: 14px 18px;
+            margin-bottom: 20px;
+        }
+
+        .comp-total-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.9rem;
+            color: #475569;
+            margin-bottom: 4px;
+        }
+
+        .comp-total-row.grand {
+            font-size: 1.25rem;
+            font-weight: 900;
+            color: #EA580C;
+            border-top: 1px solid #FDE68A;
+            padding-top: 8px;
+            margin-top: 6px;
+        }
+
+        .comp-actions-bar {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .btn-wa-action {
+            background: #25D366;
+            color: #FFFFFF;
+            font-weight: 700;
+            padding: 12px;
+            border-radius: 10px;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-size: 0.95rem;
+            transition: all 0.2s ease;
+        }
+
+        .btn-wa-action:hover {
+            background: #1EBE5D;
+            transform: translateY(-1px);
+        }
+
+        .btn-print-action {
+            background: #0F172A;
+            color: #FFFFFF;
+            font-weight: 600;
+            padding: 10px;
+            border-radius: 10px;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            font-size: 0.88rem;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="comp-page-wrap">
+        <div class="comp-card" id="comprobante-box">
+            <div class="comp-header">
+                <img src="img/logo.jpg" alt="Logo El Gustazo" class="comp-logo">
+                <h1 style="font-size: 1.25rem; margin: 0; color: #F59E0B; font-weight: 900; letter-spacing: -0.5px;">EL
+                    BUEN GUSTO - EL GUSTAZO</h1>
+                <p style="font-size: 0.78rem; color: #CBD5E1; margin: 4px 0 0 0;">Sierra Maestra, Managua • Sistema 100%
+                    Offline</p>
+                <div class="comp-badge-verified">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2.5">
+                        <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                    Comprobante Electrónico Válido
+                </div>
+            </div>
+
+            <div class="comp-body">
+                <div class="comp-meta-grid">
+                    <div class="comp-meta-item">
+                        <strong>N° Factura:</strong>
+                        <span id="txt-fac-num">Cargando...</span>
+                    </div>
+                    <div class="comp-meta-item">
+                        <strong>Fecha y Hora:</strong>
+                        <span id="txt-fac-fecha">--/--/----</span>
+                    </div>
+                    <div class="comp-meta-item">
+                        <strong>Cliente:</strong>
+                        <span id="txt-fac-cliente">Consumidor Final</span>
+                    </div>
+                    <div class="comp-meta-item">
+                        <strong>Método de Pago:</strong>
+                        <span id="txt-fac-pago">Efectivo</span>
+                    </div>
+                </div>
+
+                <table class="comp-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 45px;">Cant</th>
+                            <th>Descripción</th>
+                            <th style="text-align: right;">Importe</th>
+                        </tr>
+                    </thead>
+                    <tbody id="comp-items-body">
+                        <tr>
+                            <td colspan="3" style="text-align: center; color: #94A3B8; padding: 16px;">Cargando
+                                productos...</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div class="comp-total-box">
+                    <div class="comp-total-row">
+                        <span>Subtotal:</span>
+                        <strong id="txt-fac-subtotal">C$ 0.00</strong>
+                    </div>
+                    <div class="comp-total-row" id="row-fac-envio" style="display: none;">
+                        <span>Envío Delivery:</span>
+                        <strong id="txt-fac-envio">C$ 0.00</strong>
+                    </div>
+                    <div class="comp-total-row grand">
+                        <span>TOTAL:</span>
+                        <strong id="txt-fac-total">C$ 0.00</strong>
+                    </div>
+                </div>
+
+                <div class="comp-actions-bar">
+                    <a id="btn-wa-share" href="#" target="_blank" class="btn-wa-action">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path
+                                d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
+                        </svg>
+                        Abrir / Enviar en WhatsApp
+                    </a>
+                    <button type="button" onclick="window.print()" class="btn-print-action">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <polyline points="6 9 6 2 18 2 18 9" />
+                            <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
+                            <rect x="6" y="14" width="12" height="8" />
+                        </svg>
+                        Imprimir / Guardar PDF
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const fac = urlParams.get('fac') || urlParams.get('id');
+
+            if (!fac) {
+                document.getElementById('txt-fac-num').innerText = 'Sin especificar';
+                return;
+            }
+
+            try {
+                const res = await fetch(`/api/ventas/comprobante/${encodeURIComponent(fac)}`);
+                const data = await res.json();
+
+                if (data.success && data.venta) {
+                    const v = data.venta;
+                    document.getElementById('txt-fac-num').innerText = v.numero_factura;
+                    document.getElementById('txt-fac-fecha').innerText = v.fecha ? new Date(v.fecha).toLocaleString('es-NI') : new Date().toLocaleString('es-NI');
+                    document.getElementById('txt-fac-cliente').innerText = v.cliente_nombre || 'Consumidor Final';
+
+                    const refTxt = v.referencia_transferencia ? ` (${v.referencia_transferencia})` : '';
+                    document.getElementById('txt-fac-pago').innerText = `${v.metodo_pago_nombre || 'Efectivo'}${v.banco ? ' ' + v.banco : ''}${refTxt}`;
+
+                    document.getElementById('txt-fac-subtotal').innerText = `C$ ${parseFloat(v.subtotal).toFixed(2)}`;
+                    if (v.costo_delivery > 0) {
+                        document.getElementById('row-fac-envio').style.display = 'flex';
+                        document.getElementById('txt-fac-envio').innerText = `C$ ${parseFloat(v.costo_delivery).toFixed(2)}`;
+                    }
+                    document.getElementById('txt-fac-total').innerText = `C$ ${parseFloat(v.total).toFixed(2)}`;
+
+                    const tbody = document.getElementById('comp-items-body');
+                    tbody.innerHTML = '';
+                    let waItemsTxt = '';
+                    (v.items || []).forEach(it => {
+                        const tr = document.createElement('tr');
+                        const cant = parseInt(it.cantidad || 1);
+                        const prec = parseFloat(it.precio_unitario || 0);
+                        const sub = cant * prec;
+                        tr.innerHTML = `
+                            <td style="font-weight:700; color:#EA580C;">${cant}x</td>
+                            <td>${it.producto_nombre || 'Platillo'}</td>
+                            <td style="text-align:right; font-weight:600;">C$ ${sub.toFixed(2)}</td>
+                        `;
+                        tbody.appendChild(tr);
+                        waItemsTxt += `• ${cant}x ${it.producto_nombre || 'Platillo'} - C$ ${sub.toFixed(2)}\n`;
+                    });
+
+                    // Armar enlace dinámico de WhatsApp
+                    const waMsg = `*EL BUEN GUSTO - EL GUSTAZO*\n` +
+                        `*Factura:* ${v.numero_factura}\n` +
+                        `*Cliente:* ${v.cliente_nombre || 'Consumidor Final'}\n` +
+                        `------------------------------------\n` +
+                        waItemsTxt +
+                        `------------------------------------\n` +
+                        `*TOTAL: C$ ${parseFloat(v.total).toFixed(2)}*\n` +
+                        `Pago: ${v.metodo_pago_nombre || 'Efectivo'}\n` +
+                        `¡Muchas gracias por su preferencia!`;
+
+                    let telClean = (v.telefono_cliente || v.cliente_tel_db || '').replace(/\D/g, '');
+                    if (telClean.length === 8) telClean = '505' + telClean;
+                    const waUrl = telClean ? `https://wa.me/${telClean}?text=${encodeURIComponent(waMsg)}` : `https://wa.me/?text=${encodeURIComponent(waMsg)}`;
+                    document.getElementById('btn-wa-share').href = waUrl;
+                } else {
+                    document.getElementById('txt-fac-num').innerText = 'No encontrada';
+                }
+            } catch (e) {
+                document.getElementById('txt-fac-num').innerText = 'Error al cargar';
+            }
+        });
+    </script>
+</body>
+
+</html>
