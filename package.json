@@ -8,6 +8,7 @@
   },
   "dependencies": {
     "express": "^4.19.2",
+    "html2pdf.js": "^0.14.0",
     "qrcode": "^1.5.4",
     "sqlite3": "^5.1.7"
   }

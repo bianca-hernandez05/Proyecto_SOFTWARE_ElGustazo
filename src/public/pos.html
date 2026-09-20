@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Punto de Venta y Facturación - El Gustazo</title>
-    <link rel="stylesheet" href="css/style.css?v=2.3">
+    <link rel="stylesheet" href="css/style.css?v=3.3">
 </head>
 
 <body>
@@ -44,8 +44,20 @@
     <main class="dashboard-container">
         <!-- Panel Izquierdo: Catálogo y Selección de Platillos y Combos -->
         <section class="catalog-section">
-            <div class="panel-header">
-                <h2>Menú de Platillos y Combos</h2>
+            <div class="panel-header" style="display: flex; justify-content: space-between; align-items: center;">
+                <div style="display: flex; align-items: baseline; gap: 10px;">
+                    <h2>Menú de Platillos y Combos</h2>
+                    <span id="txt-contador-platillos" style="font-size: 0.82rem; color: #64748B; font-weight: 600;"></span>
+                </div>
+                <div style="display:flex; gap:8px; align-items:center;">
+                    <a href="menu.html" target="_blank" class="btn-small" style="background:#EA580C; font-weight:700; text-decoration:none; display:inline-flex; align-items:center; gap:5px; padding: 6px 12px; font-size: 0.85rem;" title="Ver y descargar Menú Digital Oficial">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                        Menú Digital (PDF)
+                    </a>
+                    <button id="btn-admin-nuevo-platillo" class="btn-charge admin-only" style="display: none; padding: 6px 14px; font-size: 0.85rem;" onclick="abrirModalPlatilloPOS()">
+                        + Nuevo Platillo / Combo
+                    </button>
+                </div>
             </div>
 
             <div class="catalog-toolbar">
@@ -59,6 +71,7 @@
                     </span>
                     <input type="text" id="txt-buscar-producto" placeholder="Buscar platillo por nombre..."
                         oninput="buscarPlatilloEnVivo()">
+                    <button type="button" id="btn-limpiar-busqueda" onclick="limpiarBusquedaPlatillo()" style="display:none; background:none; border:none; color:#94A3B8; font-size:1.2rem; cursor:pointer; padding:0 8px; line-height:1;" title="Limpiar búsqueda">&times;</button>
                 </div>
 
                 <div class="categories-bar">
@@ -204,16 +217,24 @@
                     </button>
                 </div>
 
-                <!-- Pago en Efectivo con Cálculo de Vuelto en una sola fila compacta -->
+                <!-- Pago en Efectivo con Cálculo de Vuelto y Atajos de Billetes -->
                 <div id="box-pago-efectivo" class="cash-details-box">
                     <div class="input-row">
                         <label for="txt-monto-recibido">Recibido (C$):</label>
                         <input type="number" id="txt-monto-recibido" placeholder="0.00" step="1"
                             oninput="calcularVueltoEnVivo()">
                     </div>
-                    <div class="change-display">
+                    <div class="change-display" id="box-vuelto-display">
                         <span>Vuelto:</span>
                         <strong id="val-vuelto">C$ 0.00</strong>
+                    </div>
+                    <div class="quick-cash-pills">
+                        <span style="font-size:0.72rem; color:#64748B; font-weight:700; align-self:center; margin-right:2px;">Billetes:</span>
+                        <button type="button" class="btn-quick-cash exacto" onclick="establecerMontoRecibidoRapido('EXACTO')" title="Pagar monto exacto">Exacto</button>
+                        <button type="button" class="btn-quick-cash" onclick="establecerMontoRecibidoRapido(100)">C$ 100</button>
+                        <button type="button" class="btn-quick-cash" onclick="establecerMontoRecibidoRapido(200)">C$ 200</button>
+                        <button type="button" class="btn-quick-cash" onclick="establecerMontoRecibidoRapido(500)">C$ 500</button>
+                        <button type="button" class="btn-quick-cash" onclick="establecerMontoRecibidoRapido(1000)">C$ 1000</button>
                     </div>
                 </div>
 
@@ -357,12 +378,15 @@
                             <div style="margin-top:6px; text-align:center;">
                                 <span class="qr-caption"
                                     style="display:block; font-weight:700; color:#15803D; font-size:0.75rem;">
-                                    📱 Escanee para WhatsApp
+                                    Escanee para ver Factura Digital
                                 </span>
                                 <a id="lnk-probar-qr" href="#" target="_blank"
                                     style="font-size:0.73rem; color:#EA580C; font-weight:700; text-decoration:none; display:inline-block; margin-top:3px;">
-                                    ↗ Probar enlace directo
+                                    Ver Factura en Línea
                                 </a>
+                                <span style="display:block; font-size:0.68rem; color:#64748B; margin-top:3px;">
+                                    (Conectar celular al Wi-Fi del restaurante)
+                                </span>
                             </div>
                         </div>
                         <div class="factura-totales-col">
@@ -391,26 +415,20 @@
             </div>
 
             <div class="modal-footer" style="flex-wrap: wrap; justify-content: space-between; gap:8px;">
-                <div style="display: flex; gap: 8px;">
-                    <button type="button" class="btn-charge" style="padding:8px 14px;" onclick="imprimirFacturaPDF()">
-                        Imprimir / Guardar PDF
-                    </button>
-                    <button type="button" class="btn-thermal" style="padding:8px 14px;"
-                        onclick="imprimirTicketTermico()">
+                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                    <button type="button" class="btn-thermal" style="padding:8px 16px; font-size: 0.92rem; font-weight: 800; display: inline-flex; align-items: center; gap: 6px;"
+                        onclick="imprimirTicketTermico()" title="Imprimir ticket directamente en la impresora térmica de caja">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
                         Imprimir Ticket Térmico
                     </button>
-                </div>
-                <div style="display: flex; gap: 8px;">
-                    <button type="button" class="btn-small" style="background:#475569;"
-                        onclick="copiarResumenWhatsApp()">
-                        Copiar Texto
+                    <button type="button" class="btn-charge" style="padding:8px 14px;" onclick="imprimirFacturaPDF()" title="Imprimir hoja completa o guardar PDF de la factura">
+                        Imprimir / Guardar Factura
                     </button>
-                    <a id="btn-enviar-whatsapp" class="btn-whatsapp" href="#" target="_blank">
-                        Enviar a WhatsApp
-                    </a>
+                </div>
+                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
                     <a id="btn-ver-en-delivery" href="delivery.html" target="_blank" class="btn-thermal"
                         style="display:none; background:#EA580C; color:#FFFFFF; text-decoration:none; padding:8px 14px; font-weight:700;">
-                        🛵 Ver en Delivery
+                        Ver en Delivery
                     </a>
                     <button type="button" class="btn-small" style="background:#94A3B8;"
                         onclick="cerrarModalComprobante()">
@@ -435,7 +453,7 @@
                         <input type="text" id="txt-nc-nombre" required placeholder="Ej: Roberto Gómez">
                     </div>
                     <div class="form-group">
-                        <label for="txt-nc-telefono">Teléfono / WhatsApp (*):</label>
+                        <label for="txt-nc-telefono">Teléfono de Contacto (*):</label>
                         <input type="text" id="txt-nc-telefono" required placeholder="Ej: 8899-0011">
                     </div>
                     <div class="form-group">
@@ -462,8 +480,65 @@
         </div>
     </div>
 
+    <!-- Modal 4: Agregar / Modificar Platillo desde POS (Exclusivo Administrador) -->
+    <div id="modal-platillo-pos" class="modal-backdrop">
+        <div class="modal-box" style="max-width: 520px;">
+            <div class="modal-header">
+                <h3 id="modal-platillo-pos-title">Nuevo Platillo o Combo</h3>
+                <button type="button" class="modal-close-btn" onclick="cerrarModalPlatilloPOS()">&times;</button>
+            </div>
+            <form onsubmit="guardarPlatilloDesdePOS(event)">
+                <input type="hidden" id="txt-pos-prod-id" value="">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="txt-pos-prod-nombre">Nombre del Platillo / Combo (*):</label>
+                        <input type="text" id="txt-pos-prod-nombre" required placeholder="Ej: Hamburguesa Especial BBQ">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group" style="flex:1;">
+                            <label for="select-pos-prod-categoria">Categoría (*):</label>
+                            <select id="select-pos-prod-categoria" required>
+                                <!-- Opciones cargadas dinámicamente -->
+                            </select>
+                        </div>
+                        <div class="form-group" style="flex:1;">
+                            <label for="txt-pos-prod-precio">Precio de Venta (C$) (*):</label>
+                            <input type="number" id="txt-pos-prod-precio" required min="0" step="0.5" placeholder="Ej: 140.00">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="txt-pos-prod-desc">Descripción / Ingredientes visibles:</label>
+                        <textarea id="txt-pos-prod-desc" rows="2" placeholder="Ej: 2 panes, 1 carne jugosa, queso cheddar y salsa especial"></textarea>
+                    </div>
+                    <div style="display:flex; gap:20px; align-items:center; background:#F8FAFC; padding:10px 14px; border-radius:8px; border:1px solid #E2E8F0; margin-top:10px;">
+                        <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-weight:700; font-size:0.85rem; color:#0F172A; margin:0;">
+                            <input type="checkbox" id="chk-pos-prod-combo" style="width:18px; height:18px;">
+                            ¿Es un Combo?
+                        </label>
+                        <label id="wrap-chk-pos-prod-activo" style="display:none; align-items:center; gap:8px; cursor:pointer; font-weight:700; font-size:0.85rem; color:#0F172A; margin:0;">
+                            <input type="checkbox" id="chk-pos-prod-activo" checked style="width:18px; height:18px;">
+                            Platillo Activo
+                        </label>
+                    </div>
+                </div>
+                <div class="modal-footer" style="justify-content:space-between;">
+                    <div>
+                        <button type="button" id="btn-pos-eliminar-prod" class="btn-small" style="display:none; background:#DC2626;" onclick="eliminarPlatilloDesdePOS()">
+                            Eliminar del Menú
+                        </button>
+                    </div>
+                    <div style="display:flex; gap:8px;">
+                        <button type="button" class="btn-small" style="background:#94A3B8;" onclick="cerrarModalPlatilloPOS()">Cancelar</button>
+                        <button type="submit" class="btn-charge" style="padding:8px 18px;">Guardar Platillo</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="js/html2pdf.bundle.min.js"></script>
     <script src="js/qrcode.min.js"></script>
-    <script src="js/app.js?v=2.3"></script>
+    <script src="js/app.js?v=3.3"></script>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             inicializarPOS();

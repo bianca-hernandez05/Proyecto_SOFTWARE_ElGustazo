@@ -20,7 +20,7 @@
             <div class="carousel-slides-wrap">
                 <!-- Slide 1: Platillos y Hamburguesas -->
                 <div class="carousel-slide active" id="slide-0">
-                    <img src="img/slide_burgers.jpg" alt="Hamburguesas El Gustazo" class="carousel-slide-img">
+                    <img src="img/slide_burgers.jpg" alt="Hamburguesas El Gustazo" class="carousel-slide-img" onerror="this.style.display='none'">
                     <div class="carousel-slide-overlay"></div>
                     <div class="carousel-slide-content">
                         <span class="carousel-tag-pill">Receta Exclusiva • El Gustazo</span>
@@ -32,19 +32,19 @@
 
                 <!-- Slide 2: Servicio Delivery -->
                 <div class="carousel-slide" id="slide-1">
-                    <img src="img/slide_delivery.jpg" alt="Delivery El Gustazo" class="carousel-slide-img">
+                    <img src="img/slide_delivery.jpg" alt="Delivery El Gustazo" class="carousel-slide-img" onerror="this.style.display='none'">
                     <div class="carousel-slide-overlay"></div>
                     <div class="carousel-slide-content">
                         <span class="carousel-tag-pill">Servicio a Domicilio Rápido</span>
                         <h2 class="carousel-slide-title">Delivery en Sierra Maestra & Alrededores</h2>
-                        <p class="carousel-slide-desc">Atención directa por WhatsApp, tarifas de envío calculadas y
+                        <p class="carousel-slide-desc">Servicio ágil a domicilio, tarifas de envío calculadas y
                             control de repartidores.</p>
                     </div>
                 </div>
 
                 <!-- Slide 3: Caja Chica y Pagos Multicanal -->
                 <div class="carousel-slide" id="slide-2">
-                    <img src="img/slide_pos.jpg" alt="POS y Caja Chica" class="carousel-slide-img">
+                    <img src="img/slide_pos.jpg" alt="POS y Caja Chica" class="carousel-slide-img" onerror="this.style.display='none'">
                     <div class="carousel-slide-overlay"></div>
                     <div class="carousel-slide-content">
                         <span class="carousel-tag-pill">Operación 100% Offline</span>
@@ -82,7 +82,45 @@
         <!-- Panel Derecho: Formulario Interactivo con Saludo Dinámico -->
         <div class="login-form-panel">
             <div class="login-header-interactive">
-                <img src="img/logo.jpg" alt="Logo El Gustazo" class="login-brand-logo-interactive">
+                <!-- Mascota Interactiva Chef Gustazo que se tapa los ojos -->
+                <div class="mascot-wrapper" id="mascot-chef" title="Chef Gustazo te acompaña en tu inicio de sesión">
+                    <svg class="mascot-svg" viewBox="0 0 120 110" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <!-- Gorro de Chef -->
+                        <path d="M42 30 C34 14, 48 6, 60 10 C72 6, 86 14, 78 30 Z" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="2"/>
+                        <ellipse cx="60" cy="18" rx="20" ry="12" fill="#FFFFFF"/>
+                        <path d="M38 30 C38 27, 82 27, 82 30 L80 36 C80 38, 40 38, 40 36 Z" fill="#EA580C"/>
+                        <!-- Orejitas -->
+                        <circle cx="34" cy="54" r="10" fill="#F59E0B" stroke="#D97706" stroke-width="1.5"/>
+                        <circle cx="34" cy="54" r="5" fill="#FDE68A"/>
+                        <circle cx="86" cy="54" r="10" fill="#F59E0B" stroke="#D97706" stroke-width="1.5"/>
+                        <circle cx="86" cy="54" r="5" fill="#FDE68A"/>
+                        <!-- Cara -->
+                        <rect x="32" y="34" width="56" height="52" rx="26" fill="#FBBF24" stroke="#D97706" stroke-width="2"/>
+                        <!-- Mejillas sonrojadas -->
+                        <ellipse cx="40" cy="66" rx="5" ry="3" fill="#F87171" opacity="0.6"/>
+                        <ellipse cx="80" cy="66" rx="5" ry="3" fill="#F87171" opacity="0.6"/>
+                        <!-- Hocico / Nariz -->
+                        <ellipse cx="60" cy="62" rx="11" ry="8" fill="#FEF3C7"/>
+                        <ellipse cx="60" cy="59" rx="3.5" ry="2.5" fill="#78350F"/>
+                        <path d="M56 64 Q60 68 64 64" stroke="#78350F" stroke-width="2" stroke-linecap="round" fill="none"/>
+                        <!-- Ojos interactivos -->
+                        <g id="mascot-eyes" class="mascot-eyes">
+                            <circle cx="48" cy="51" r="4.5" fill="#1E293B"/>
+                            <circle cx="49.5" cy="49.5" r="1.5" fill="#FFFFFF"/>
+                            <circle cx="72" cy="51" r="4.5" fill="#1E293B"/>
+                            <circle cx="73.5" cy="49.5" r="1.5" fill="#FFFFFF"/>
+                        </g>
+                        <!-- Manos / Patitas que se tapan los ojos -->
+                        <g id="mascot-hand-left" class="mascot-hand">
+                            <circle cx="34" cy="92" r="11" fill="#F59E0B" stroke="#D97706" stroke-width="2"/>
+                            <circle cx="34" cy="92" r="7" fill="#FDE68A"/>
+                        </g>
+                        <g id="mascot-hand-right" class="mascot-hand">
+                            <circle cx="86" cy="92" r="11" fill="#F59E0B" stroke="#D97706" stroke-width="2"/>
+                            <circle cx="86" cy="92" r="7" fill="#FDE68A"/>
+                        </g>
+                    </svg>
+                </div>
                 <h2 id="txt-dynamic-greeting" class="login-greeting-title">¡Bienvenido a El Gustazo!</h2>
                 <p id="txt-dynamic-sub" class="login-greeting-sub">Sierra Maestra, Managua • Sistema POS Offline</p>
             </div>
@@ -280,7 +318,38 @@
             generarNuevoCodigoSeguridad();
             // Pre-cargar Administrador por defecto con bienvenida
             seleccionarRolRapido('admin', 'admin123*');
+            inicializarMascotaInteractiva();
         });
+
+        function inicializarMascotaInteractiva() {
+            const mascot = document.getElementById('mascot-chef');
+            const txtUser = document.getElementById('txt-user');
+            const txtPass = document.getElementById('txt-pass');
+
+            if (!mascot) return;
+
+            if (txtUser) {
+                txtUser.addEventListener('focus', () => {
+                    mascot.className = 'mascot-wrapper looking-down';
+                });
+                txtUser.addEventListener('blur', () => {
+                    mascot.className = 'mascot-wrapper';
+                });
+            }
+
+            if (txtPass) {
+                txtPass.addEventListener('focus', () => {
+                    if (txtPass.type === 'text') {
+                        mascot.className = 'mascot-wrapper peeking';
+                    } else {
+                        mascot.className = 'mascot-wrapper covering-eyes';
+                    }
+                });
+                txtPass.addEventListener('blur', () => {
+                    mascot.className = 'mascot-wrapper';
+                });
+            }
+        }
 
         function generarNuevoCodigoSeguridad(girarIcono = false) {
             if (girarIcono) {
@@ -341,15 +410,22 @@
             const passInput = document.getElementById('txt-pass');
             const iconEye = document.getElementById('icon-eye');
             const iconEyeOff = document.getElementById('icon-eye-off');
+            const mascot = document.getElementById('mascot-chef');
 
             if (passInput.type === 'password') {
                 passInput.type = 'text';
                 iconEye.style.display = 'none';
                 iconEyeOff.style.display = 'inline';
+                if (mascot && document.activeElement === passInput) {
+                    mascot.className = 'mascot-wrapper peeking';
+                }
             } else {
                 passInput.type = 'password';
                 iconEye.style.display = 'inline';
                 iconEyeOff.style.display = 'none';
+                if (mascot && document.activeElement === passInput) {
+                    mascot.className = 'mascot-wrapper covering-eyes';
+                }
             }
         }
 
@@ -360,7 +436,7 @@
 
             if (pwd.length >= 8) {
                 reqLen.classList.add('valid');
-                reqLen.innerHTML = '✓ 8+ Caracteres';
+                reqLen.innerHTML = '8+ Caracteres';
             } else {
                 reqLen.classList.remove('valid');
                 reqLen.innerHTML = '8+ Caracteres';
@@ -368,7 +444,7 @@
 
             if (/\d/.test(pwd)) {
                 reqNum.classList.add('valid');
-                reqNum.innerHTML = '✓ Números';
+                reqNum.innerHTML = 'Números';
             } else {
                 reqNum.classList.remove('valid');
                 reqNum.innerHTML = 'Números';
@@ -376,7 +452,7 @@
 
             if (/[!@#$%^&*(),.?":{}|<>]/.test(pwd)) {
                 reqSym.classList.add('valid');
-                reqSym.innerHTML = '✓ Símbolo (*)';
+                reqSym.innerHTML = 'Símbolo (*)';
             } else {
                 reqSym.classList.remove('valid');
                 reqSym.innerHTML = 'Símbolo (*)';

@@ -267,6 +267,7 @@
                             <th>Nombre de Usuario</th>
                             <th>Rol Asignado</th>
                             <th>Estado</th>
+                            <th style="text-align:center;">Acciones</th>
                         </tr>
                     </thead>
                     <tbody id="tabla-usuarios-body">
@@ -421,7 +422,12 @@
 
         async function cargarReportesDashboard(periodo = periodoReporteActual) {
             try {
-                const res = await fetch(`/api/reportes/dashboard?periodo=${encodeURIComponent(periodo)}`);
+                const res = await fetchAuth(`/api/reportes/dashboard?periodo=${encodeURIComponent(periodo)}`);
+                if (res.status === 403) {
+                    alert('Acceso Restringido: Las funciones analíticas del Módulo 6 están reservadas exclusivamente para el Administrador.');
+                    window.location.href = 'pos.html';
+                    return;
+                }
                 const data = await res.json();
 
                 const kpi = data.kpis || {};
@@ -566,7 +572,7 @@
 
         async function cargarCategoriasYProductos() {
             try {
-                const resCat = await fetch('/api/categorias');
+                const resCat = await fetchAuth('/api/categorias');
                 categoriasList = await resCat.json();
 
                 const selectCat = document.getElementById('select-prod-categoria');
@@ -578,7 +584,7 @@
                     selectCat.appendChild(opt);
                 });
 
-                const resProd = await fetch('/api/productos/admin');
+                const resProd = await fetchAuth('/api/productos/admin');
                 productosList = await resProd.json();
 
                 const tbody = document.getElementById('tabla-admin-productos-body');
@@ -596,7 +602,10 @@
                         <td style="font-weight:700; color:#EA580C;">${formatoMoneda(p.precio)}</td>
                         <td><span class="status-badge ${p.estado ? 'success' : 'danger'}">${p.estado ? 'Activo' : 'Inactivo'}</span></td>
                         <td>
-                            <button class="btn-small" onclick="editarProducto(${p.id_producto})">Editar</button>
+                            <div style="display:flex; gap:6px;">
+                                <button class="btn-small" onclick="editarProducto(${p.id_producto})" title="Editar producto">Editar</button>
+                                <button class="btn-small" style="background:#DC2626;" onclick="eliminarProducto(${p.id_producto}, '${p.nombre.replace(/'/g, "\\'")}')" title="Eliminar del catálogo">Eliminar</button>
+                            </div>
                         </td>
                     `;
                     tbody.appendChild(tr);
@@ -653,7 +662,7 @@
             const method = id ? 'PUT' : 'POST';
 
             try {
-                const res = await fetch(url, {
+                const res = await fetchAuth(url, {
                     method,
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ nombre, id_categoria, precio, descripcion, es_combo })
@@ -671,9 +680,34 @@
             }
         }
 
+        async function eliminarProducto(id, nombre) {
+            if (!confirm(`¿Está seguro de que desea eliminar el producto "${nombre}" del catálogo?`)) return;
+            try {
+                const res = await fetchAuth(`/api/productos/${id}`, { method: 'DELETE' });
+                if (!res.ok) {
+                    if (res.status === 404) {
+                        alert('El servidor aún no ha cargado la nueva ruta de eliminación en memoria. Por favor reinicia tu terminal con Ctrl+C y ejecuta nuevamente "node src/server.js", luego recarga la página.');
+                        return;
+                    }
+                    const errData = await res.json().catch(() => ({ error: 'Error del servidor' }));
+                    alert('Error al eliminar producto: ' + (errData.error || `Código HTTP ${res.status}`));
+                    return;
+                }
+                const data = await res.json();
+                if (data.success) {
+                    mostrarToast(`Producto "${nombre}" eliminado exitosamente.`);
+                    await cargarCategoriasYProductos();
+                } else {
+                    alert('Error al eliminar producto: ' + (data.error || 'No se pudo eliminar'));
+                }
+            } catch (err) {
+                alert('Error de conexión al eliminar producto.');
+            }
+        }
+
         async function cargarInsumosParaRecetas() {
             try {
-                const res = await fetch('/api/insumos');
+                const res = await fetchAuth('/api/insumos');
                 insumosList = await res.json();
             } catch (e) {
                 console.error(e);
@@ -682,7 +716,7 @@
 
         async function cargarDetalleReceta(idProducto) {
             try {
-                const res = await fetch(`/api/recetas/${idProducto}`);
+                const res = await fetchAuth(`/api/recetas/${idProducto}`);
                 const receta = await res.json();
                 const tbody = document.getElementById('tabla-receta-detalle-body');
                 tbody.innerHTML = '';
@@ -759,7 +793,7 @@
             });
 
             try {
-                const res = await fetch(`/api/recetas/${idProducto}`, {
+                const res = await fetchAuth(`/api/recetas/${idProducto}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ ingredientes })
@@ -777,7 +811,7 @@
 
         async function cargarUsuarios() {
             try {
-                const res = await fetch('/api/usuarios');
+                const res = await fetchAuth('/api/usuarios');
                 const usuarios = await res.json();
                 const tbody = document.getElementById('tabla-usuarios-body');
                 tbody.innerHTML = '';
@@ -790,11 +824,34 @@
                         <td><code>${u.usuario}</code></td>
                         <td><span class="role-pill" style="background:${u.id_rol === 1 ? '#EA580C' : '#F59E0B'}; color:#FFF;">${u.rol}</span></td>
                         <td><span class="status-badge ${u.estado ? 'success' : 'danger'}">${u.estado ? 'Activo' : 'Inactivo'}</span></td>
+                        <td style="text-align:center;">
+                            ${u.id_usuario === 1 ? '<small style="color:#64748B; font-weight:600;">Admin Base</small>' : `
+                                <button class="btn-small" style="background:#DC2626; padding:3px 8px; font-size:0.75rem;" onclick="eliminarUsuario(${u.id_usuario}, '${u.nombre.replace(/'/g, "\\'")}')">
+                                    Desactivar
+                                </button>
+                            `}
+                        </td>
                     `;
                     tbody.appendChild(tr);
                 });
             } catch (e) {
                 console.error(e);
+            }
+        }
+
+        async function eliminarUsuario(id, nombre) {
+            if (!confirm(`¿Está seguro de que desea desactivar al usuario "${nombre}"?`)) return;
+            try {
+                const res = await fetchAuth(`/api/usuarios/${id}`, { method: 'DELETE' });
+                const data = await res.json();
+                if (data.success) {
+                    mostrarToast(`Usuario "${nombre}" desactivado.`);
+                    await cargarUsuarios();
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            } catch (err) {
+                alert('Error al conectar con el servidor.');
             }
         }
 
@@ -814,7 +871,7 @@
             const id_rol = document.getElementById('select-u-rol').value;
 
             try {
-                const res = await fetch('/api/usuarios', {
+                const res = await fetchAuth('/api/usuarios', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ nombre, usuario, password, id_rol })
@@ -834,7 +891,7 @@
 
         async function cargarRespaldos() {
             try {
-                const res = await fetch('/api/backups');
+                const res = await fetchAuth('/api/backups');
                 const respaldos = await res.json();
                 const tbody = document.getElementById('tabla-respaldos-body');
                 tbody.innerHTML = '';
@@ -865,7 +922,7 @@
 
         async function crearRespaldoInmediato() {
             try {
-                const res = await fetch('/api/backup/crear', { method: 'POST' });
+                const res = await fetchAuth('/api/backup/crear', { method: 'POST' });
                 const data = await res.json();
                 if (data.success) {
                     alert(`Respaldo Exitoso\nArchivo generado: ${data.archivo}\nUbicación: database/backups/`);

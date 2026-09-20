@@ -54,12 +54,12 @@
                 <span class="kpi-sub">Materias primas en catálogo</span>
             </div>
             <div class="kpi-card red">
-                <span class="kpi-label">Insumos en Escasez Crítica</span>
+                <span class="kpi-label">Insumos en Escasez Crítica (&lt; 200)</span>
                 <span id="kpi-insumos-bajos" class="kpi-value">0</span>
-                <span class="kpi-sub">Stock actual ≤ Mínimo requerido</span>
+                <span class="kpi-sub">Stock actual &lt; 200 unidades</span>
             </div>
             <div class="kpi-card green">
-                <span class="kpi-label">Insumos con Stock Saludable</span>
+                <span class="kpi-label">Insumos con Stock Saludable (≥ 200)</span>
                 <span id="kpi-insumos-ok" class="kpi-value">0</span>
                 <span class="kpi-sub">Operación garantizada para el turno</span>
             </div>
@@ -74,6 +74,18 @@
 
         <!-- TAB 1: Existencias y Alertas -->
         <section id="tab-existencias">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; gap: 12px; flex-wrap: wrap; background: #FFFFFF; padding: 12px 16px; border-radius: 8px; border: 1px solid #E2E8F0; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+                <div style="flex: 1; min-width: 260px; max-width: 400px;">
+                    <input type="text" id="filtro-insumo-input" placeholder="Buscar insumo en tiempo real..." oninput="filtrarInsumos()" style="width: 100%; padding: 8px 12px; border-radius: 6px; border: 1px solid #CBD5E1; font-size: 0.88rem; outline: none;">
+                </div>
+                <div style="display: flex; gap: 8px; align-items: center;">
+                    <span style="font-size: 0.8rem; font-weight: 700; color: #64748B;">Filtrar:</span>
+                    <button type="button" class="btn-small" id="btn-filtro-todos" style="background: #0F172A;" onclick="filtrarPorEstado('TODOS')">Todos</button>
+                    <button type="button" class="btn-small" id="btn-filtro-criticos" style="background: #DC2626;" onclick="filtrarPorEstado('CRITICOS')">Críticos (&lt; 200)</button>
+                    <button type="button" class="btn-small" id="btn-filtro-normal" style="background: #16A34A;" onclick="filtrarPorEstado('NORMAL')">Saludables (≥ 200)</button>
+                </div>
+            </div>
+
             <div class="table-card">
                 <table class="data-table">
                     <thead>
@@ -172,7 +184,15 @@
 
                     <div class="form-group">
                         <label for="txt-cantidad-mov">Cantidad (*):</label>
-                        <input type="number" id="txt-cantidad-mov" required min="0.01" step="0.01" placeholder="Ej: 20">
+                        <input type="number" id="txt-cantidad-mov" required min="0.01" step="0.01" placeholder="Ej: 100, 250, 500...">
+                        <div style="display:flex; gap:6px; margin-top:6px; flex-wrap:wrap; align-items:center;">
+                            <span style="font-size:0.75rem; color:#64748B; font-weight:700;">Atajo Rápido (Alto Volumen):</span>
+                            <button type="button" class="btn-small" style="background:#E2E8F0; color:#0F172A; padding:2px 8px; font-size:0.75rem;" onclick="ajustarCantidadRapida(50)">+50</button>
+                            <button type="button" class="btn-small" style="background:#E2E8F0; color:#0F172A; padding:2px 8px; font-size:0.75rem;" onclick="ajustarCantidadRapida(100)">+100</button>
+                            <button type="button" class="btn-small" style="background:#E2E8F0; color:#0F172A; padding:2px 8px; font-size:0.75rem;" onclick="ajustarCantidadRapida(250)">+250</button>
+                            <button type="button" class="btn-small" style="background:#E2E8F0; color:#0F172A; padding:2px 8px; font-size:0.75rem;" onclick="ajustarCantidadRapida(500)">+500</button>
+                            <button type="button" class="btn-small" style="background:#E2E8F0; color:#0F172A; padding:2px 8px; font-size:0.75rem;" onclick="ajustarCantidadRapida(1000)">+1000</button>
+                        </div>
                     </div>
 
                     <div class="form-group">
@@ -191,6 +211,8 @@
     <script src="js/app.js"></script>
     <script>
         let insumosList = [];
+        let filtroEstadoActual = 'TODOS';
+        let textoFiltroActual = '';
 
         document.addEventListener('DOMContentLoaded', async () => {
             verificarAutenticacion(false);
@@ -209,51 +231,101 @@
             });
         }
 
+        function filtrarInsumos() {
+            const input = document.getElementById('filtro-insumo-input');
+            textoFiltroActual = input ? input.value.trim().toLowerCase() : '';
+            renderizarTablaInsumos();
+        }
+
+        function filtrarPorEstado(estado) {
+            filtroEstadoActual = estado;
+            // Actualizar apariencia de botones
+            const btnTodos = document.getElementById('btn-filtro-todos');
+            const btnCrit = document.getElementById('btn-filtro-criticos');
+            const btnNorm = document.getElementById('btn-filtro-normal');
+            if (btnTodos) btnTodos.style.opacity = (estado === 'TODOS') ? '1' : '0.6';
+            if (btnCrit) btnCrit.style.opacity = (estado === 'CRITICOS') ? '1' : '0.6';
+            if (btnNorm) btnNorm.style.opacity = (estado === 'NORMAL') ? '1' : '0.6';
+            renderizarTablaInsumos();
+        }
+
+        function renderizarTablaInsumos() {
+            const tbody = document.getElementById('tabla-insumos-body');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+
+            const filtrados = insumosList.filter(ins => {
+                const coincideTexto = ins.nombre.toLowerCase().includes(textoFiltroActual);
+                const esCritico = ins.stock_actual < 200;
+                if (!coincideTexto) return false;
+                if (filtroEstadoActual === 'CRITICOS') return esCritico;
+                if (filtroEstadoActual === 'NORMAL') return !esCritico;
+                return true;
+            });
+
+            if (filtrados.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:20px; color:#64748B;">No se encontraron insumos con los filtros aplicados.</td></tr>`;
+                return;
+            }
+
+            filtrados.forEach(ins => {
+                const esCritico = ins.stock_actual < 200;
+                const pctStock = Math.min(100, Math.round((ins.stock_actual / 200) * 100));
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><strong>${ins.nombre}</strong></td>
+                    <td>${ins.unidad_medida}</td>
+                    <td>
+                        <div class="stock-meter-wrap">
+                            <span style="font-weight:800; color:${esCritico ? '#DC2626' : '#16A34A'}; font-size:1.05rem;">
+                                ${ins.stock_actual}
+                            </span>
+                            <div class="stock-meter-bar" title="${pctStock}% respecto al umbral crítico (200)">
+                                <div class="stock-meter-fill ${esCritico ? 'critico' : 'saludable'}" style="width: ${pctStock}%;"></div>
+                            </div>
+                        </div>
+                    </td>
+                    <td style="font-weight:700; color:#475569;">${ins.stock_minimo}</td>
+                    <td>
+                        <span class="status-badge ${esCritico ? 'critical' : 'success'}">
+                            ${esCritico ? 'Stock Crítico (< 200)' : 'Normal'}
+                        </span>
+                    </td>
+                    <td>
+                        <button class="btn-small" onclick="abrirModalConInsumo(${ins.id_insumo})">+ Stock</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
         async function cargarInsumos() {
             try {
                 const res = await fetch('/api/insumos');
                 insumosList = await res.json();
 
-                const tbody = document.getElementById('tabla-insumos-body');
                 const selectModal = document.getElementById('select-insumo-mov');
-                tbody.innerHTML = '';
-                selectModal.innerHTML = '';
+                if (selectModal) selectModal.innerHTML = '';
 
                 let bajosCount = 0;
                 insumosList.forEach(ins => {
-                    const esBajo = ins.stock_actual <= ins.stock_minimo;
-                    if (esBajo) bajosCount++;
-
-                    // Llenar tabla
-                    const tr = document.createElement('tr');
-                    tr.innerHTML = `
-                        <td><strong>${ins.nombre}</strong></td>
-                        <td>${ins.unidad_medida}</td>
-                        <td style="font-weight:800; color:${esBajo ? '#DC2626' : '#16A34A'}; font-size:1.05rem;">
-                            ${ins.stock_actual}
-                        </td>
-                        <td>${ins.stock_minimo}</td>
-                        <td>
-                            <span class="status-badge ${esBajo ? 'danger' : 'success'}">
-                                ${esBajo ? 'Stock Crítico' : 'Normal'}
-                            </span>
-                        </td>
-                        <td>
-                            <button class="btn-small" onclick="abrirModalConInsumo(${ins.id_insumo})">+ Stock</button>
-                        </td>
-                    `;
-                    tbody.appendChild(tr);
+                    if (ins.stock_actual < 200) bajosCount++;
 
                     // Llenar selector del modal
-                    const opt = document.createElement('option');
-                    opt.value = ins.id_insumo;
-                    opt.innerText = `${ins.nombre} (Actual: ${ins.stock_actual} ${ins.unidad_medida})`;
-                    selectModal.appendChild(opt);
+                    if (selectModal) {
+                        const opt = document.createElement('option');
+                        opt.value = ins.id_insumo;
+                        opt.innerText = `${ins.nombre} (Actual: ${ins.stock_actual} ${ins.unidad_medida})`;
+                        selectModal.appendChild(opt);
+                    }
                 });
 
                 document.getElementById('kpi-total-insumos').innerText = insumosList.length;
                 document.getElementById('kpi-insumos-bajos').innerText = bajosCount;
                 document.getElementById('kpi-insumos-ok').innerText = insumosList.length - bajosCount;
+
+                renderizarTablaInsumos();
             } catch (e) {
                 console.error(e);
             }
@@ -317,6 +389,12 @@
             document.getElementById('modal-entrada-stock').classList.add('open');
         }
 
+        function ajustarCantidadRapida(delta) {
+            const input = document.getElementById('txt-cantidad-mov');
+            const actual = parseFloat(input.value) || 0;
+            input.value = actual + delta;
+        }
+
         function abrirModalConInsumo(idInsumo) {
             document.getElementById('select-insumo-mov').value = idInsumo;
             abrirModalEntradaStock();
@@ -330,8 +408,8 @@
             e.preventDefault();
             const id_insumo = document.getElementById('select-insumo-mov').value;
             const tipo = document.getElementById('select-tipo-mov').value;
-            const cantidad = document.getElementById('txt-cantidad-mov').value;
-            const motivo = document.getElementById('txt-motivo-mov').value;
+            const cantidad = parseFloat(document.getElementById('txt-cantidad-mov').value);
+            const motivo = document.getElementById('txt-motivo-mov').value.trim();
             const usuario = obtenerUsuarioActual();
 
             try {
@@ -342,8 +420,7 @@
                         id_insumo,
                         tipo,
                         cantidad,
-                        costo_unitario: costo_unitario ? parseFloat(costo_unitario) : undefined,
-                        motivo,
+                        motivo: motivo || `Movimiento de ${tipo}`,
                         id_usuario: usuario ? usuario.id_usuario : 1
                     })
                 });
@@ -359,6 +436,7 @@
                     alert('Error: ' + data.error);
                 }
             } catch (err) {
+                console.error(err);
                 alert('Error al registrar movimiento.');
             }
         }

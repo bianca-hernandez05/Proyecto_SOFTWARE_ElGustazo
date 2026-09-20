@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestión de Pedidos a Domicilio (Delivery) - El Gustazo</title>
-    <link rel="stylesheet" href="css/style.css?v=2.3">
+    <link rel="stylesheet" href="css/style.css?v=2.8">
 </head>
 
 <body>
@@ -44,15 +44,29 @@
         <div class="delivery-top-bar">
             <div>
                 <h2>Gestión de Pedidos a Domicilio (Delivery)</h2>
-                <p class="section-desc">Panel visual para registrar y despachar pedidos por WhatsApp y llamadas en
+                <p class="section-desc">Panel visual para registrar y despachar pedidos a domicilio y llamadas en
                     Sierra Maestra y zonas aledañas</p>
             </div>
             <div class="delivery-actions-wrap">
                 <button type="button" class="btn-charge" onclick="abrirModalNuevoPedidoDelivery()">
                     + Registrar Pedido Delivery
                 </button>
-                <button type="button" class="btn-small" style="background:#0284C7;" onclick="cargarTableroDelivery()">
-                    Actualizar Tablero
+                <button type="button" class="btn-small" style="background:#475569;" onclick="abrirModalGestionRepartidores()" title="Administrar y editar repartidores del negocio">
+                    Gestionar Repartidores
+                </button>
+                <button type="button" class="btn-small" style="background:#6366F1; font-weight:700;" onclick="abrirModalHistorialArchivados()" title="Ver pedidos entregados que fueron archivados para despejar el tablero">
+                    Historial / Archivados
+                </button>
+                <a href="menu.html" target="_blank" class="btn-small" style="background:#EA580C; font-weight:700; text-decoration:none; display:inline-flex; align-items:center; gap:5px;" title="Ver y descargar Menú Digital en PDF">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                    Menú Digital (PDF)
+                </a>
+                <button type="button" class="btn-small" id="btn-actualizar-tablero" style="background:#0284C7; font-weight:700; display:inline-flex; align-items:center; gap:6px;" onclick="actualizarTableroManual()" title="Refrescar datos del tablero ahora mismo">
+                    <svg id="icon-refresh-tablero" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <path d="M23 4v6h-6" />
+                        <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+                    </svg>
+                    <span id="text-refresh-tablero">Actualizar Tablero</span>
                 </button>
             </div>
         </div>
@@ -129,9 +143,14 @@
 
             <!-- Columna 5: Entregados -->
             <div class="kanban-col">
-                <div class="kanban-col-header col-entregado">
-                    <span>Entregado</span>
-                    <span class="col-count-badge" id="count-col-entregado">0</span>
+                <div class="kanban-col-header col-entregado" style="display:flex; justify-content:space-between; align-items:center;">
+                    <div style="display:flex; align-items:center; gap:6px;">
+                        <span>Entregado</span>
+                        <span class="col-count-badge" id="count-col-entregado">0</span>
+                    </div>
+                    <button type="button" class="btn-archive-delivered" onclick="archivarPedidosEntregados()" title="Archivar pedidos entregados para despejar el tablero (se conservan guardados en el historial)">
+                        Archivar Todo
+                    </button>
                 </div>
                 <div class="kanban-cards-wrap" id="col-cards-entregado">
                     <!-- Tarjetas de pedidos entregados -->
@@ -174,7 +193,7 @@
                             <input type="text" id="txt-del-nombre" required placeholder="Ej: Carlos Mendoza">
                         </div>
                         <div class="form-group">
-                            <label for="txt-del-telefono">Teléfono / WhatsApp (*):</label>
+                            <label for="txt-del-telefono">Teléfono de Contacto (*):</label>
                             <input type="text" id="txt-del-telefono" required placeholder="Ej: 8899-7711">
                         </div>
                     </div>
@@ -374,12 +393,15 @@
                             <div style="margin-top:6px; text-align:center;">
                                 <span class="qr-caption"
                                     style="display:block; font-weight:700; color:#15803D; font-size:0.75rem;">
-                                    📱 Escanee para WhatsApp
+                                    Escanee para ver Factura Digital
                                 </span>
                                 <a id="lnk-probar-qr-del" href="#" target="_blank"
                                     style="font-size:0.73rem; color:#EA580C; font-weight:700; text-decoration:none; display:inline-block; margin-top:3px;">
-                                    ↗ Probar enlace directo
+                                    Ver Factura en Línea
                                 </a>
+                                <span style="display:block; font-size:0.68rem; color:#64748B; margin-top:3px;">
+                                    (Conectar celular al Wi-Fi del restaurante)
+                                </span>
                             </div>
                         </div>
                         <div class="factura-totales-col">
@@ -401,10 +423,17 @@
                     </div>
                 </div>
             </div>
-            <div class="modal-footer" style="justify-content: space-between;">
-                <button type="button" class="btn-charge" onclick="imprimirFacturaDeliveryPDF()">
-                    Imprimir / Guardar Factura PDF
-                </button>
+            <div class="modal-footer" style="justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                    <button type="button" class="btn-thermal" style="padding:8px 16px; font-size: 0.92rem; font-weight: 800; display: inline-flex; align-items: center; gap: 6px;"
+                        onclick="imprimirTicketDeliveryTermico()" title="Imprimir ticket comanda/entrega para el repartidor en impresora térmica">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+                        Imprimir Ticket Térmico
+                    </button>
+                    <button type="button" class="btn-charge" onclick="imprimirFacturaDeliveryPDF()">
+                        Imprimir Factura
+                    </button>
+                </div>
                 <button type="button" class="btn-small" style="background:#94A3B8;"
                     onclick="cerrarModalFacturaDelivery()">
                     Cerrar
@@ -413,8 +442,138 @@
         </div>
     </div>
 
+    <!-- Modal: Gestión de Repartidores (Libre Albedrío) -->
+    <div id="modal-gestion-repartidores" class="modal-backdrop">
+        <div class="modal-box" style="max-width: 650px;">
+            <div class="modal-header">
+                <h3>Gestión y Edición de Repartidores</h3>
+                <button type="button" class="modal-close-btn" onclick="cerrarModalGestionRepartidores()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <!-- Formulario de Agregar / Editar -->
+                <form id="form-repartidor" onsubmit="guardarRepartidor(event)" style="background:#F8FAFC; border:1px solid #E2E8F0; padding:12px; border-radius:8px; margin-bottom:16px;">
+                    <input type="hidden" id="txt-rep-id" value="">
+                    <h4 id="lbl-rep-form-title" style="margin:0 0 10px 0; color:#0F172A; font-size:0.9rem; font-weight:800;">Registrar Nuevo Repartidor</h4>
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                        <div class="form-group" style="margin-bottom:8px;">
+                            <label for="txt-rep-nombre" style="font-size:0.75rem; font-weight:700;">Nombre Completo (*):</label>
+                            <input type="text" id="txt-rep-nombre" required placeholder="Ej: Marvin González" style="padding:6px 8px; font-size:0.85rem;">
+                        </div>
+                        <div class="form-group" style="margin-bottom:8px;">
+                            <label for="txt-rep-telefono" style="font-size:0.75rem; font-weight:700;">Teléfono:</label>
+                            <input type="text" id="txt-rep-telefono" placeholder="Ej: 8888-9999" style="padding:6px 8px; font-size:0.85rem;">
+                        </div>
+                        <div class="form-group" style="margin-bottom:8px;">
+                            <label for="txt-rep-vehiculo" style="font-size:0.75rem; font-weight:700;">Vehículo:</label>
+                            <select id="txt-rep-vehiculo" style="padding:6px 8px; font-size:0.85rem;">
+                                <option value="Moto">Motocicleta</option>
+                                <option value="Bicicleta">Bicicleta</option>
+                                <option value="A pie">A pie / Local</option>
+                                <option value="Carro">Vehículo / Carro</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="margin-bottom:8px;">
+                            <label for="txt-rep-placa" style="font-size:0.75rem; font-weight:700;">Placa / Detalle:</label>
+                            <input type="text" id="txt-rep-placa" placeholder="Ej: M-12345" style="padding:6px 8px; font-size:0.85rem;">
+                        </div>
+                    </div>
+                    <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:8px;">
+                        <button type="button" id="btn-rep-cancelar-edit" class="btn-small" style="background:#94A3B8; display:none;" onclick="cancelarEdicionRepartidor()">Cancelar Edición</button>
+                        <button type="submit" class="btn-charge" id="btn-rep-guardar" style="padding:6px 14px; font-size:0.85rem;">Guardar Repartidor</button>
+                    </div>
+                </form>
+
+                <!-- Lista de Repartidores Registrados -->
+                <h4 style="margin:0 0 8px 0; color:#0F172A; font-size:0.9rem; font-weight:800;">Repartidores Registrados</h4>
+                <div style="max-height: 220px; overflow-y:auto; border:1px solid #E2E8F0; border-radius:8px;">
+                    <table class="data-table" style="font-size:0.85rem; margin:0;">
+                        <thead>
+                            <tr>
+                                <th>Nombre</th>
+                                <th>Teléfono</th>
+                                <th>Vehículo</th>
+                                <th>Placa</th>
+                                <th style="text-align:center;">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabla-repartidores-body">
+                            <!-- Renderizado dinámicamente -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-small" style="background:#64748B;" onclick="cerrarModalGestionRepartidores()">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Reasignar Repartidor a Pedido Específico -->
+    <div id="modal-reasignar-repartidor" class="modal-backdrop">
+        <div class="modal-box" style="max-width: 420px;">
+            <div class="modal-header">
+                <h3>Reasignar Repartidor</h3>
+                <button type="button" class="modal-close-btn" onclick="cerrarModalReasignarRepartidor()">&times;</button>
+            </div>
+            <form onsubmit="guardarReasignacionRepartidor(event)">
+                <div class="modal-body">
+                    <input type="hidden" id="txt-reasignar-id-pedido" value="">
+                    <p style="font-size:0.85rem; color:#475569; margin-bottom:12px;">
+                        Seleccione el nuevo repartidor responsable de entregar esta orden:
+                    </p>
+                    <div class="form-group">
+                        <label for="select-nuevo-repartidor" style="font-size:0.8rem; font-weight:700;">Repartidor Responsable:</label>
+                        <select id="select-nuevo-repartidor" required style="width:100%; padding:8px; font-size:0.85rem;">
+                            <!-- Opciones cargadas dinámicamente -->
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer" style="justify-content:space-between;">
+                    <button type="button" class="btn-small" style="background:#94A3B8;" onclick="cerrarModalReasignarRepartidor()">Cancelar</button>
+                    <button type="submit" class="btn-charge" style="padding:8px 16px;">Confirmar Reasignación</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal: Historial de Pedidos Delivery Archivados -->
+    <div id="modal-historial-archivados" class="modal-backdrop">
+        <div class="modal-box" style="max-width: 900px;">
+            <div class="modal-header">
+                <h3>Historial de Pedidos Delivery Archivados</h3>
+                <button type="button" class="modal-close-btn" onclick="cerrarModalHistorialArchivados()">&times;</button>
+            </div>
+            <div class="modal-body" style="max-height: 70vh; overflow-y: auto;">
+                <p style="color: #64748B; font-size: 0.85rem; margin-top: 0; margin-bottom: 12px;">
+                    Estos pedidos ya fueron entregados y archivados para no saturar el tablero visual de despacho. Todos los datos de venta, facturas y reportes permanecen 100% guardados.
+                </p>
+                <div style="overflow-x: auto;">
+                    <table class="data-table" style="width: 100%;">
+                        <thead>
+                            <tr>
+                                <th># Pedido</th>
+                                <th>Fecha</th>
+                                <th>Cliente</th>
+                                <th>Dirección</th>
+                                <th>Total</th>
+                                <th style="text-align:center;">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabla-archivados-body">
+                            <!-- Filas dinámicas -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-small" style="background:#64748B;" onclick="cerrarModalHistorialArchivados()">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/html2pdf.bundle.min.js"></script>
     <script src="js/qrcode.min.js"></script>
-    <script src="js/delivery.js?v=2.3"></script>
+    <script src="js/delivery.js?v=2.5"></script>
 </body>
 
 </html>

@@ -71,7 +71,7 @@
                 <span class="search-icon">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
                 </span>
-                <input type="text" id="txt-buscar-cliente" placeholder="Buscar cliente por nombre o teléfono WhatsApp..." oninput="filtrarClientesEnVivo()">
+                <input type="text" id="txt-buscar-cliente" placeholder="Buscar cliente por nombre o teléfono..." oninput="filtrarClientesEnVivo()">
             </div>
         </div>
 
@@ -81,7 +81,7 @@
                 <thead>
                     <tr>
                         <th>Nombre del Cliente</th>
-                        <th>Teléfono / WhatsApp</th>
+                        <th>Teléfono</th>
                         <th>Dirección</th>
                         <th>Categoría</th>
                         <th>Acciones</th>
@@ -108,7 +108,7 @@
                         <input type="text" id="txt-nombre" required placeholder="Ej: María José Morales">
                     </div>
                     <div class="form-group">
-                        <label for="txt-telefono">Teléfono / WhatsApp (*):</label>
+                        <label for="txt-telefono">Teléfono (*):</label>
                         <input type="text" id="txt-telefono" required placeholder="Ej: 8877-6655">
                     </div>
                     <div class="form-group">
@@ -178,7 +178,6 @@
                 </div>
             </div>
             <div class="modal-footer">
-                <a id="btn-perfil-whatsapp" class="btn-whatsapp" href="#" target="_blank">Contactar por WhatsApp</a>
                 <button type="button" class="btn-small" style="background:#94A3B8;" onclick="cerrarModalPerfil()">Cerrar</button>
             </div>
         </div>
@@ -199,7 +198,7 @@
                         <input type="text" id="txt-edit-nombre" required placeholder="Ej: Carlos Mendoza">
                     </div>
                     <div class="form-group">
-                        <label for="txt-edit-telefono">Teléfono / WhatsApp (*):</label>
+                        <label for="txt-edit-telefono">Teléfono (*):</label>
                         <input type="text" id="txt-edit-telefono" required placeholder="Ej: 8877-6655">
                     </div>
                     <div class="form-group">
@@ -257,6 +256,9 @@
 
                 const badgeColor = cl.categoria === 'VIP' ? 'warning' : (cl.categoria === 'Frecuente' ? 'success' : (cl.categoria === 'Corporativo' ? 'info' : 'secondary'));
 
+                const usuarioActual = obtenerUsuarioActual();
+                const esAdmin = usuarioActual && usuarioActual.id_rol === 1;
+
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td><strong>${cl.nombre}</strong></td>
@@ -271,6 +273,10 @@
                             <button class="btn-small" style="background:#0284C7; padding:5px 10px;" onclick="verPerfilCliente(${cl.id_cliente})">
                                 Perfil & Compras
                             </button>
+                            ${esAdmin ? `
+                            <button class="btn-small" style="background:#DC2626; padding:5px 10px;" onclick="eliminarCliente(${cl.id_cliente}, '${cl.nombre.replace(/'/g, "\\'")}')" title="Eliminar cliente">
+                                Eliminar
+                            </button>` : ''}
                         </div>
                     </td>
                 `;
@@ -307,7 +313,7 @@
             const categoria = document.getElementById('select-categoria').value;
 
             try {
-                const res = await fetch('/api/clientes', {
+                const res = await fetchAuth('/api/clientes', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ nombre, telefono, direccion, categoria })
@@ -337,10 +343,6 @@
                 document.getElementById('perfil-cat').innerText = data.cliente.categoria;
                 document.getElementById('perfil-total-gastado').innerText = formatoMoneda(data.estadisticas.total_gastado);
                 document.getElementById('perfil-compras-count').innerText = data.estadisticas.total_compras;
-
-                const cleanTel = (data.cliente.telefono || '').replace(/\D/g, '');
-                const btnWa = document.getElementById('btn-perfil-whatsapp');
-                btnWa.href = `https://wa.me/505${cleanTel}?text=Hola%20${encodeURIComponent(data.cliente.nombre)},%20te%20saludamos%20de%20El%20Gustazo!`;
 
                 const tbody = document.getElementById('perfil-historial-tbody');
                 tbody.innerHTML = '';
@@ -409,6 +411,38 @@
                 }
             } catch (err) {
                 alert('Error al conectar con el servidor.');
+            }
+        }
+
+        async function eliminarCliente(id, nombre) {
+            if (!confirm(`¿Está seguro de que desea eliminar al cliente "${nombre}"?`)) {
+                return;
+            }
+
+            try {
+                const res = await fetchAuth(`/api/clientes/${id}`, { method: 'DELETE' });
+                if (!res.ok) {
+                    if (res.status === 403) {
+                        alert('Acceso Denegado: Solo el Administrador tiene autorización para eliminar clientes.');
+                        return;
+                    }
+                    if (res.status === 404) {
+                        alert('El servidor aún no ha cargado la nueva ruta de eliminación en memoria. Por favor reinicia tu terminal con Ctrl+C y ejecuta nuevamente "node src/server.js", luego recarga la página.');
+                        return;
+                    }
+                    const errData = await res.json().catch(() => ({ error: 'Error del servidor' }));
+                    alert('Error al eliminar: ' + (errData.error || `Código HTTP ${res.status}`));
+                    return;
+                }
+                const data = await res.json();
+                if (data.success) {
+                    mostrarToast(`Cliente "${nombre}" eliminado exitosamente.`);
+                    await cargarClientes();
+                } else {
+                    alert('Error al eliminar: ' + (data.error || 'No se pudo eliminar el cliente.'));
+                }
+            } catch (err) {
+                alert('Error de conexión al eliminar el cliente.');
             }
         }
     </script>

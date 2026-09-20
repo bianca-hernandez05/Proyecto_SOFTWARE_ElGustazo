@@ -2,16 +2,61 @@ const express = require('express');
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 const fs = require('fs');
+const os = require('os');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+function getLocalIpAddress() {
+    const interfaces = os.networkInterfaces();
+    let candidates = [];
+    for (const name of Object.keys(interfaces)) {
+        for (const iface of interfaces[name]) {
+            if (iface.family === 'IPv4' && !iface.internal) {
+                // Descartar adaptadores virtuales de VirtualBox o APIPA
+                if (iface.address.startsWith('192.168.56.') || iface.address.startsWith('169.254.')) {
+                    continue;
+                }
+                candidates.push({ name, address: iface.address });
+            }
+        }
+    }
+    // Priorizar interfaz Wi-Fi (usada comúnmente en restaurantes y celulares)
+    const wifi = candidates.find(c => /wi-?fi/i.test(c.name));
+    if (wifi) return wifi.address;
+
+    // Luego interfaz Ethernet cableada
+    const eth = candidates.find(c => /ethernet/i.test(c.name));
+    if (eth) return eth.address;
+
+    if (candidates.length > 0) return candidates[0].address;
+    return '127.0.0.1';
+}
+
 app.use(express.json());
 app.use('/css', express.static(path.join(__dirname, 'css')));
 app.use('/js', express.static(path.join(__dirname, 'public', 'js')));
-app.use('/js', express.static(path.join(__dirname, 'js')));
 app.use('/img', express.static(path.join(__dirname, 'public', 'img')));
 app.use(express.static(path.join(__dirname, 'public')));
+
+// Información del servidor para escaneo QR móvil en red local
+app.get('/api/server-info', (req, res) => {
+    const ip = getLocalIpAddress();
+    res.json({
+        ip,
+        port: PORT,
+        baseUrl: `http://${ip}:${PORT}`
+    });
+});
+
+// Guardar archivo PDF del menú en servidor para descarga directa desde enlace WhatsApp
+app.post('/api/menu/guardar-pdf', express.raw({ type: 'application/pdf', limit: '20mb' }), (req, res) => {
+    const pdfPath = path.join(__dirname, 'public', 'Menu_Oficial_El_Gustazo.pdf');
+    fs.writeFile(pdfPath, req.body, (err) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ success: true, url: '/Menu_Oficial_El_Gustazo.pdf' });
+    });
+});
 
 // Rutas directas para navegación limpia
 app.get('/', (req, res) => {
@@ -32,12 +77,45 @@ const db = new sqlite3.Database(dbPath, (err) => {
     } else {
         console.log('Conectado exitosamente a la base de datos SQLite de El Gustazo (100% Offline).');
         ejecutarRespaldoDiarioAutomatico();
+        // Migración preventiva de columna archivado en pedidos_delivery
+        db.run(`ALTER TABLE pedidos_delivery ADD COLUMN archivado INTEGER DEFAULT 0`, () => {});
     }
 });
 
 // ==========================================
-// UTILIDADES: RESPALDO AUTOMÁTICO DIARIO (RF-23, RNF-05)
+// UTILIDADES: RESPALDO AUTOMÁTICO DIARIO Y GESTIÓN DE ESPACIO (RF-23, RNF-05)
 // ==========================================
+function purgarRespaldosAntiguos(dejarMax = 1) {
+    try {
+        if (!fs.existsSync(backupsDir)) return;
+        const files = fs.readdirSync(backupsDir)
+            .filter(f => f.endsWith('.db'))
+            .map(f => {
+                const full = path.join(backupsDir, f);
+                return {
+                    name: f,
+                    fullPath: full,
+                    time: fs.statSync(full).mtime.getTime()
+                };
+            })
+            .sort((a, b) => b.time - a.time); // Más reciente primero
+
+        if (files.length > dejarMax) {
+            const sobrantes = files.slice(dejarMax);
+            sobrantes.forEach(fileObj => {
+                try {
+                    fs.unlinkSync(fileObj.fullPath);
+                    console.log(`[Respaldos] Eliminado respaldo antiguo para optimizar espacio: ${fileObj.name} (se conserva solo 1)`);
+                } catch (e) {
+                    console.error('Error eliminando respaldo viejo:', e.message);
+                }
+            });
+        }
+    } catch (e) {
+        console.error('Error al purgar respaldos antiguos:', e.message);
+    }
+}
+
 function ejecutarRespaldoDiarioAutomatico() {
     const hoy = new Date().toISOString().slice(0, 10);
     const files = fs.readdirSync(backupsDir);
@@ -51,8 +129,11 @@ function ejecutarRespaldoDiarioAutomatico() {
                 console.error('Error en respaldo automático:', err.message);
             } else {
                 console.log(`Respaldo diario automático creado exitosamente: ${backupDest}`);
+                purgarRespaldosAntiguos(1);
             }
         });
+    } else {
+        purgarRespaldosAntiguos(1);
     }
 }
 
@@ -117,7 +198,30 @@ app.post('/api/login', (req, res) => {
     });
 });
 
-app.get('/api/usuarios', (req, res) => {
+// Middleware de Control de Acceso Basado en Roles (RBAC - Módulo 6)
+// El Administrador (id_rol: 1) posee privilegios completos de agregar, modificar, actualizar y eliminar.
+// El Cajero (id_rol: 2) tiene estrictamente prohibido el acceso a funciones administrativas del Módulo 6:
+// - Modificar precios, crear o desactivar platillos y combos del catálogo.
+// - Configurar o alterar las recetas fijas (BOM) de insumos.
+// - Visualizar reportes analíticos de ventas globales, ingresos totales o ganancias.
+// - Gestionar la creación de nuevos usuarios o realizar copias de seguridad del sistema.
+// - Eliminar registros (productos, insumos, clientes, repartidores, usuarios).
+function verificarAdmin(req, res, next) {
+    const rolHeader = req.headers['x-user-role'];
+    const idRol = rolHeader !== undefined ? parseInt(rolHeader, 10) : (req.body && req.body.id_rol_solicitante ? parseInt(req.body.id_rol_solicitante, 10) : null);
+
+    // Si explícitamente se identifica como Cajero (id_rol: 2) o cualquier rol distinto de Administrador (id_rol: 1)
+    if (idRol === 2 || (idRol !== null && !isNaN(idRol) && idRol !== 1)) {
+        return res.status(403).json({
+            error: 'Acceso Prohibido: Las funciones administrativas del Módulo 6 (catálogo, precios, recetas BOM, reportes globales, usuarios y respaldos) están reservadas exclusivamente para el Administrador.',
+            codigo: 'ACCESO_DENEGADO_MODULO6'
+        });
+    }
+
+    next();
+}
+
+app.get('/api/usuarios', verificarAdmin, (req, res) => {
     const query = `
         SELECT u.id_usuario, u.nombre, u.usuario, u.id_rol, r.nombre AS rol, u.estado, u.fecha_creacion
         FROM usuarios u
@@ -130,7 +234,7 @@ app.get('/api/usuarios', (req, res) => {
     });
 });
 
-app.post('/api/usuarios', (req, res) => {
+app.post('/api/usuarios', verificarAdmin, (req, res) => {
     const { nombre, usuario, password, id_rol } = req.body;
     if (!nombre || !usuario || !password || !id_rol) {
         return res.status(400).json({ error: 'Todos los campos son requeridos.' });
@@ -153,6 +257,19 @@ app.post('/api/usuarios', (req, res) => {
             res.json({ success: true, id_usuario: this.lastID, mensaje: 'Usuario creado exitosamente con credenciales seguras.' });
         }
     );
+});
+
+// Desactivar / Eliminar usuario
+app.delete('/api/usuarios/:id', verificarAdmin, (req, res) => {
+    const { id } = req.params;
+    if (parseInt(id) === 1) {
+        return res.status(400).json({ error: 'El usuario administrador principal no puede ser eliminado.' });
+    }
+    db.run(`UPDATE usuarios SET estado = 0 WHERE id_usuario = ?`, [id], function(err) {
+        if (err) return res.status(500).json({ error: err.message });
+        if (this.changes === 0) return res.status(404).json({ error: 'Usuario no encontrado.' });
+        res.json({ success: true, mensaje: 'Usuario desactivado exitosamente.' });
+    });
 });
 
 // ==========================================
@@ -179,7 +296,7 @@ app.get('/api/productos', (req, res) => {
     });
 });
 
-app.get('/api/productos/admin', (req, res) => {
+app.get('/api/productos/admin', verificarAdmin, (req, res) => {
     const query = `
         SELECT p.*, c.nombre AS categoria_nombre
         FROM productos p
@@ -192,7 +309,7 @@ app.get('/api/productos/admin', (req, res) => {
     });
 });
 
-app.post('/api/productos', (req, res) => {
+app.post('/api/productos', verificarAdmin, (req, res) => {
     const { nombre, descripcion, precio, id_categoria, es_combo } = req.body;
     if (!nombre || precio === undefined || !id_categoria) {
         return res.status(400).json({ error: 'Nombre, precio y categoría son obligatorios.' });
@@ -207,7 +324,7 @@ app.post('/api/productos', (req, res) => {
     );
 });
 
-app.put('/api/productos/:id', (req, res) => {
+app.put('/api/productos/:id', verificarAdmin, (req, res) => {
     const { id } = req.params;
     const { nombre, descripcion, precio, id_categoria, es_combo, estado } = req.body;
     db.run(
@@ -220,6 +337,16 @@ app.put('/api/productos/:id', (req, res) => {
     );
 });
 
+// Eliminar producto (soft delete para mantener historial de ventas)
+app.delete('/api/productos/:id', verificarAdmin, (req, res) => {
+    const { id } = req.params;
+    db.run(`UPDATE productos SET estado = 0 WHERE id_producto = ?`, [id], function(err) {
+        if (err) return res.status(500).json({ error: err.message });
+        if (this.changes === 0) return res.status(404).json({ error: 'Producto no encontrado.' });
+        res.json({ success: true, mensaje: 'Producto eliminado exitosamente del catálogo.' });
+    });
+});
+
 // ==========================================
 // MÓDULO 3 & 6: INVENTARIO, BOM Y ALERTAS (RF-09, RF-10, RF-11, RF-12, RF-20)
 // ==========================================
@@ -230,7 +357,7 @@ app.get('/api/insumos', (req, res) => {
     });
 });
 
-app.post('/api/insumos', (req, res) => {
+app.post('/api/insumos', verificarAdmin, (req, res) => {
     const { nombre, unidad_medida, stock_actual, stock_minimo, costo_unitario } = req.body;
     if (!nombre || !unidad_medida) {
         return res.status(400).json({ error: 'Nombre y unidad de medida requeridos.' });
@@ -240,9 +367,37 @@ app.post('/api/insumos', (req, res) => {
         [nombre, unidad_medida, parseFloat(stock_actual) || 0, parseFloat(stock_minimo) || 0, parseFloat(costo_unitario) || 0],
         function(err) {
             if (err) return res.status(500).json({ error: err.message });
-            res.json({ success: true, id_insumo: this.lastID, mensaje: 'Insumo registrado.' });
+            res.json({ success: true, id_insumo: this.lastID, mensaje: 'Insumo registrado exitosamente.' });
         }
     );
+});
+
+// Actualizar insumo (Módulo 3 & 6)
+app.put('/api/insumos/:id', verificarAdmin, (req, res) => {
+    const { id } = req.params;
+    const { nombre, unidad_medida, stock_minimo, costo_unitario } = req.body;
+    if (!nombre || !unidad_medida) {
+        return res.status(400).json({ error: 'Nombre y unidad de medida requeridos.' });
+    }
+    db.run(
+        `UPDATE insumos SET nombre = ?, unidad_medida = ?, stock_minimo = ?, costo_unitario = ? WHERE id_insumo = ?`,
+        [nombre.trim(), unidad_medida.trim(), parseFloat(stock_minimo) || 0, parseFloat(costo_unitario) || 0, id],
+        function(err) {
+            if (err) return res.status(500).json({ error: err.message });
+            if (this.changes === 0) return res.status(404).json({ error: 'Insumo no encontrado.' });
+            res.json({ success: true, mensaje: 'Insumo actualizado exitosamente.' });
+        }
+    );
+});
+
+// Eliminar insumo (soft delete)
+app.delete('/api/insumos/:id', verificarAdmin, (req, res) => {
+    const { id } = req.params;
+    db.run(`UPDATE insumos SET estado = 0 WHERE id_insumo = ?`, [id], function(err) {
+        if (err) return res.status(500).json({ error: err.message });
+        if (this.changes === 0) return res.status(404).json({ error: 'Insumo no encontrado.' });
+        res.json({ success: true, mensaje: 'Insumo eliminado exitosamente.' });
+    });
 });
 
 // Registro de entrada de compras o ajustes al inventario (RF-12)
@@ -294,13 +449,13 @@ app.post('/api/insumos/movimiento', (req, res) => {
     });
 });
 
-// Alertas de stock bajo en tiempo real (RF-10)
+// Alertas de stock bajo en tiempo real (RF-10) - Umbral crítico en 200 y mínimo en 100
 app.get('/api/alertas-stock', (req, res) => {
     const query = `
         SELECT id_insumo, nombre, unidad_medida, stock_actual, stock_minimo, costo_unitario,
-               (stock_minimo - stock_actual) AS faltante
+               (CASE WHEN stock_actual < 200 THEN (200 - stock_actual) ELSE (stock_minimo - stock_actual) END) AS faltante
         FROM insumos
-        WHERE stock_actual <= stock_minimo AND estado = 1
+        WHERE (stock_actual <= stock_minimo OR stock_actual < 200) AND estado = 1
         ORDER BY stock_actual ASC
     `;
     db.all(query, [], (err, rows) => {
@@ -313,11 +468,11 @@ app.get('/api/alertas-stock', (req, res) => {
 app.get('/api/insumos/faltantes', (req, res) => {
     const query = `
         SELECT id_insumo, nombre, unidad_medida, stock_actual, stock_minimo, costo_unitario,
-               ROUND(MAX(0, (stock_minimo * 1.5) - stock_actual), 2) AS sugerencia_reabastecer,
-               ROUND(MAX(0, (stock_minimo * 1.5) - stock_actual) * costo_unitario, 2) AS costo_estimado
+               ROUND(MAX(0, (CASE WHEN stock_minimo < 100 THEN 250 ELSE stock_minimo * 2 END) - stock_actual), 2) AS sugerencia_reabastecer,
+               ROUND(MAX(0, (CASE WHEN stock_minimo < 100 THEN 250 ELSE stock_minimo * 2 END) - stock_actual) * costo_unitario, 2) AS costo_estimado
         FROM insumos
-        WHERE stock_actual <= stock_minimo AND estado = 1
-        ORDER BY (stock_minimo - stock_actual) DESC
+        WHERE (stock_actual <= stock_minimo OR stock_actual < 200) AND estado = 1
+        ORDER BY stock_actual ASC
     `;
     db.all(query, [], (err, rows) => {
         if (err) return res.status(500).json({ error: err.message });
@@ -358,7 +513,7 @@ app.get('/api/recetas/:id_producto', (req, res) => {
     });
 });
 
-app.post('/api/recetas/:id_producto', (req, res) => {
+app.post('/api/recetas/:id_producto', verificarAdmin, (req, res) => {
     const { id_producto } = req.params;
     const { ingredientes } = req.body; // Array de { id_insumo, cantidad }
 
@@ -480,6 +635,34 @@ app.put('/api/clientes/:id', (req, res) => {
             });
         }
     );
+});
+
+// Eliminar cliente (con eliminación permanente si no tiene ventas, o soft-delete si tiene historial)
+app.delete('/api/clientes/:id', verificarAdmin, (req, res) => {
+    const { id } = req.params;
+    const idNum = parseInt(id);
+
+    if (idNum === 1) {
+        return res.status(400).json({ error: 'No se puede eliminar el Consumidor Final predeterminado.' });
+    }
+
+    db.get('SELECT COUNT(*) as count FROM ventas WHERE id_cliente = ?', [idNum], (errV, rowV) => {
+        if (!errV && rowV && rowV.count > 0) {
+            // Si tiene ventas vinculadas, desactivar para no romper el historial contable
+            db.run(`UPDATE clientes SET estado = 0 WHERE id_cliente = ?`, [idNum], function(err) {
+                if (err) return res.status(500).json({ error: err.message });
+                if (this.changes === 0) return res.status(404).json({ error: 'Cliente no encontrado.' });
+                res.json({ success: true, mensaje: 'Cliente eliminado exitosamente del catálogo activo.' });
+            });
+        } else {
+            // Si no tiene ventas, eliminarlo permanentemente
+            db.run(`DELETE FROM clientes WHERE id_cliente = ?`, [idNum], function(err) {
+                if (err) return res.status(500).json({ error: err.message });
+                if (this.changes === 0) return res.status(404).json({ error: 'Cliente no encontrado.' });
+                res.json({ success: true, mensaje: 'Cliente eliminado permanentemente.' });
+            });
+        }
+    });
 });
 
 // Historial y perfil de consumo de un cliente (RF-15)
@@ -878,19 +1061,12 @@ app.post('/api/ventas', (req, res) => {
                             };
 
                             const ticketEscPos = generarTicketEscPos(ticketData);
-                            const whatsappMsg = generarResumenWhatsApp(ticketData);
 
-                            let telClean = (clienteTel || '').replace(/\D/g, '');
-                            if (telClean.length === 8) {
-                                telClean = '505' + telClean;
-                            }
-                            const whatsappLink = telClean
-                                ? `https://wa.me/${telClean}?text=${encodeURIComponent(whatsappMsg)}`
-                                : `https://wa.me/?text=${encodeURIComponent(whatsappMsg)}`;
-
-                            // El código QR codifica el enlace universal de WhatsApp para que al escanearlo con cualquier teléfono abra el comprobante de inmediato
-                            const qrPayload = whatsappLink;
-                            const digitalLink = `/comprobante.html?fac=${numeroFactura}`;
+                            // El código QR codifica el enlace web directo a la factura digital para que al escanearlo se vea la factura tal como en el PDF
+                            const localIp = getLocalIpAddress();
+                            const baseUrl = `http://${localIp}:${PORT}`;
+                            const digitalLink = `${baseUrl}/comprobante.html?fac=${numeroFactura}`;
+                            const qrPayload = digitalLink;
 
                             // Sincronización automática con Módulo de Delivery (evitar retrabajo)
                             let id_pedido_delivery = null;
@@ -953,9 +1129,7 @@ app.post('/api/ventas', (req, res) => {
                                 numero_pedido_delivery: numero_pedido_delivery,
                                 qr_payload: qrPayload,
                                 digital_link: digitalLink,
-                                ticket_esc_pos: ticketEscPos,
-                                whatsapp_mensaje: whatsappMsg,
-                                whatsapp_link: whatsappLink
+                                ticket_esc_pos: ticketEscPos
                             });
                         });
                     });
@@ -982,17 +1156,30 @@ app.get('/api/delivery/conteo-activos', (req, res) => {
 
 // 1. Listado de pedidos delivery
 app.get('/api/delivery/pedidos', (req, res) => {
-    const { estado } = req.query;
+    const { estado, ver_archivados } = req.query;
     let query = `
         SELECT p.*, c.nombre AS cliente_registrado_nombre, c.categoria AS cliente_categoria
         FROM pedidos_delivery p
         LEFT JOIN clientes c ON p.id_cliente = c.id_cliente
     `;
     let params = [];
+    let conditions = [];
+
+    if (ver_archivados === '1' || ver_archivados === 'true') {
+        conditions.push(`p.archivado = 1`);
+    } else {
+        conditions.push(`(p.archivado IS NULL OR p.archivado = 0)`);
+    }
+
     if (estado && estado !== 'TODOS') {
-        query += ` WHERE p.estado = ?`;
+        conditions.push(`p.estado = ?`);
         params.push(estado);
     }
+
+    if (conditions.length > 0) {
+        query += ` WHERE ` + conditions.join(' AND ');
+    }
+
     query += ` ORDER BY p.id_pedido DESC LIMIT 100`;
 
     db.all(query, params, (err, pedidos) => {
@@ -1215,6 +1402,86 @@ app.post('/api/delivery/repartidores', (req, res) => {
     );
 });
 
+// Actualizar datos de un repartidor (libre albedrío para editar)
+app.put('/api/delivery/repartidores/:id', (req, res) => {
+    const { id } = req.params;
+    const { nombre, telefono, vehiculo, placa, estado } = req.body;
+    if (!nombre) return res.status(400).json({ error: 'Nombre de repartidor requerido.' });
+    db.run(
+        `UPDATE repartidores SET nombre = ?, telefono = ?, vehiculo = ?, placa = ?, estado = ? WHERE id_repartidor = ?`,
+        [nombre.trim(), telefono || '', vehiculo || 'Moto', placa || '', estado !== undefined ? estado : 1, id],
+        function(err) {
+            if (err) return res.status(500).json({ error: err.message });
+            res.json({ success: true, mensaje: 'Repartidor actualizado exitosamente.' });
+        }
+    );
+});
+
+// Eliminar / Desactivar repartidor
+app.delete('/api/delivery/repartidores/:id', verificarAdmin, (req, res) => {
+    const { id } = req.params;
+    db.run(`UPDATE repartidores SET estado = 0 WHERE id_repartidor = ?`, [id], function(err) {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ success: true, mensaje: 'Repartidor desactivado exitosamente.' });
+    });
+});
+
+// Reasignar libremente repartidor en cualquier pedido activo
+app.patch('/api/delivery/pedidos/:id/repartidor', (req, res) => {
+    const { id } = req.params;
+    const { repartidor, id_repartidor } = req.body;
+    db.run(
+        `UPDATE pedidos_delivery SET repartidor = ?, id_repartidor = ? WHERE id_pedido = ?`,
+        [repartidor || null, id_repartidor || null, id],
+        function(err) {
+            if (err) return res.status(500).json({ error: err.message });
+            res.json({ success: true, mensaje: 'Repartidor reasignado al pedido exitosamente.' });
+        }
+    );
+});
+
+// Archivar todos los pedidos entregados para despejar el tablero visual (se conservan en base de datos e historial)
+app.post('/api/delivery/pedidos/archivar-entregados', (req, res) => {
+    db.run(
+        `UPDATE pedidos_delivery SET archivado = 1 WHERE estado = 'ENTREGADO' AND (archivado IS NULL OR archivado = 0)`,
+        [],
+        function(err) {
+            if (err) return res.status(500).json({ error: err.message });
+            res.json({ success: true, mensaje: `${this.changes} pedidos entregados archivados correctamente.`, count: this.changes });
+        }
+    );
+});
+
+// Archivar o restaurar pedido individual del tablero
+app.patch('/api/delivery/pedidos/:id/archivar', (req, res) => {
+    const { id } = req.params;
+    const { archivado } = req.body;
+    const val = archivado === undefined ? 1 : (archivado ? 1 : 0);
+    db.run(
+        `UPDATE pedidos_delivery SET archivado = ? WHERE id_pedido = ?`,
+        [val, id],
+        function(err) {
+            if (err) return res.status(500).json({ error: err.message });
+            res.json({ success: true, mensaje: val === 1 ? 'Pedido archivado del tablero.' : 'Pedido restaurado al tablero.' });
+        }
+    );
+});
+
+// Eliminar pedido permanentemente (Solo Administrador - Módulo 6)
+app.delete('/api/delivery/pedidos/:id', verificarAdmin, (req, res) => {
+    const { id } = req.params;
+    db.run(`DELETE FROM pedido_delivery_detalle WHERE id_pedido = ?`, [id], (errDet) => {
+        if (errDet) return res.status(500).json({ error: errDet.message });
+
+        db.run(`DELETE FROM pedidos_delivery WHERE id_pedido = ?`, [id], function(err) {
+            if (err) return res.status(500).json({ error: err.message });
+            if (this.changes === 0) return res.status(404).json({ error: 'Pedido no encontrado.' });
+            res.json({ success: true, mensaje: 'Pedido eliminado permanentemente.' });
+        });
+    });
+});
+
+
 // 5. Ticket especial de cocina y despacho para delivery
 app.get('/api/delivery/pedidos/:id/ticket', (req, res) => {
     const { id } = req.params;
@@ -1265,77 +1532,7 @@ ${p.referencia_transferencia ? `REFERENCIA:                  ${p.referencia_tran
     });
 });
 
-// 6. Mensajes preformateados de WhatsApp para cliente y repartidor (Sin Emojis)
-app.get('/api/delivery/pedidos/:id/mensajes-whatsapp', (req, res) => {
-    const { id } = req.params;
-    db.get(`SELECT * FROM pedidos_delivery WHERE id_pedido = ?`, [id], (err, p) => {
-        if (err || !p) return res.status(404).json({ error: 'Pedido no encontrado.' });
 
-        db.all(`SELECT d.*, pr.nombre FROM pedido_delivery_detalle d JOIN productos pr ON d.id_producto = pr.id_producto WHERE d.id_pedido = ?`, [id], (errDet, items) => {
-            let itemsTexto = '';
-            (items || []).forEach(it => {
-                itemsTexto += `• ${it.cantidad}x ${it.nombre} - C$ ${it.subtotal.toFixed(2)}\n`;
-            });
-
-            const msgClienteListo = `*EL BUEN GUSTO - EL GUSTAZO*\n` +
-                `*A tu Paladar - Sierra Maestra, Managua*\n` +
-                `------------------------------------\n` +
-                `Estimado/a *${p.cliente_nombre}*:\n` +
-                `Le informamos que su pedido *#${p.numero_pedido}* ya se encuentra *LISTO* y preparado en cocina.\n\n` +
-                `*Detalle de su orden:*\n${itemsTexto}` +
-                `Subtotal: C$ ${p.subtotal.toFixed(2)}\n` +
-                `Envio Delivery: C$ ${p.costo_delivery.toFixed(2)}\n` +
-                `*TOTAL A PAGAR: C$ ${p.total.toFixed(2)}*\n` +
-                `Forma de Pago: ${p.id_metodo_pago === 1 ? 'Efectivo contra entrega' : 'Transferencia ' + (p.banco || '')}\n` +
-                `------------------------------------\n` +
-                `En breve saldra con nuestro repartidor hacia su direccion: *${p.direccion}*.\n` +
-                `Muchas gracias por su preferencia.`;
-
-            const msgClienteEnCamino = `*EL BUEN GUSTO - EL GUSTAZO*\n` +
-                `*A tu Paladar - Sierra Maestra, Managua*\n` +
-                `------------------------------------\n` +
-                `Estimado/a *${p.cliente_nombre}*:\n` +
-                `Su pedido *#${p.numero_pedido}* va *EN CAMINO* hacia su direccion:\n` +
-                `*${p.direccion}*\n\n` +
-                `*Repartidor asignado:* ${p.repartidor || 'Personal de turno'}\n` +
-                `*Total exacto a pagar:* C$ ${p.total.toFixed(2)} (${p.id_metodo_pago === 1 ? 'Efectivo' : 'Transferencia confirmada'})\n` +
-                `------------------------------------\n` +
-                `Por favor estar atento/a a su telefono o timbre.`;
-
-            const msgRepartidor = `*ORDEN DE ENTREGA - EL GUSTAZO*\n` +
-                `*Pedido:* #${p.numero_pedido}\n` +
-                `*Cliente:* ${p.cliente_nombre}\n` +
-                `*Telefono:* ${p.telefono || 'Sin numero'}\n` +
-                `*Direccion de Entrega:*\n${p.direccion}\n` +
-                `${p.notas ? `*Instrucciones / Notas:* ${p.notas}\n` : ''}` +
-                `------------------------------------\n` +
-                `*Detalle:*\n${itemsTexto}` +
-                `*TOTAL A COBRAR:* C$ ${p.total.toFixed(2)}\n` +
-                `*Metodo:* ${p.id_metodo_pago === 1 ? 'EFECTIVO (Cobrar y entregar vuelto)' : 'TRANSFERENCIA BANCARIA (' + (p.banco || '') + ')'}\n` +
-                `------------------------------------`;
-
-            const telLimpio = (p.telefono || '').replace(/\D/g, '');
-            res.json({
-                success: true,
-                pedido: p,
-                wa_cliente_url: `https://wa.me/${telLimpio}?text=${encodeURIComponent(msgClienteEnCamino)}`,
-                wa_repartidor_url: `https://wa.me/?text=${encodeURIComponent(msgRepartidor)}`,
-                cliente_listo: {
-                    texto: msgClienteListo,
-                    link: `https://wa.me/${telLimpio}?text=${encodeURIComponent(msgClienteListo)}`
-                },
-                cliente_en_camino: {
-                    texto: msgClienteEnCamino,
-                    link: `https://wa.me/${telLimpio}?text=${encodeURIComponent(msgClienteEnCamino)}`
-                },
-                repartidor: {
-                    texto: msgRepartidor,
-                    link: `https://wa.me/?text=${encodeURIComponent(msgRepartidor)}`
-                }
-            });
-        });
-    });
-});
 
 // Generador de formato de Ticket Térmico Portátil ESC/POS (Sin Emojis)
 function generarTicketEscPos(data) {
@@ -1422,35 +1619,70 @@ function generarResumenWhatsApp(data) {
     return lineas;
 }
 
-// Comprobante digital por número de factura (Para visualización web y código QR)
+// Comprobante digital por número de factura o pedido delivery (Para visualización web y código QR)
 app.get('/api/ventas/comprobante/:numero_factura', (req, res) => {
     const num = req.params.numero_factura;
     db.get(`
-        SELECT v.*, mp.nombre AS metodo_pago_nombre, u.nombre AS cajero_nombre, c.telefono AS cliente_tel_db
+        SELECT v.*, mp.nombre AS metodo_pago_nombre, u.nombre AS cajero_nombre, c.telefono AS cliente_tel_db,
+               pd.direccion AS direccion_entrega, pd.repartidor, pd.telefono AS telefono_delivery, pd.numero_pedido AS numero_delivery
         FROM ventas v
         LEFT JOIN metodos_pago mp ON v.id_metodo_pago = mp.id_metodo_pago
         LEFT JOIN usuarios u ON v.id_usuario = u.id_usuario
         LEFT JOIN clientes c ON v.id_cliente = c.id_cliente
-        WHERE v.numero_factura = ?
-    `, [num], (err, venta) => {
+        LEFT JOIN pedidos_delivery pd ON v.id_venta = pd.id_venta
+        WHERE v.numero_factura = ? OR pd.numero_pedido = ?
+    `, [num, num], (err, venta) => {
         if (err) return res.status(500).json({ error: err.message });
-        if (!venta) return res.status(404).json({ error: 'Comprobante no encontrado.' });
-
-        db.all(`
-            SELECT vd.*, p.nombre AS producto_nombre
-            FROM venta_detalle vd
-            JOIN productos p ON vd.id_producto = p.id_producto
-            WHERE vd.id_venta = ?
-        `, [venta.id_venta], (errItems, items) => {
-            if (errItems) return res.status(500).json({ error: errItems.message });
-            res.json({
-                success: true,
-                venta: {
-                    ...venta,
-                    items: items || []
-                }
+        if (venta) {
+            db.all(`
+                SELECT vd.*, p.nombre AS producto_nombre
+                FROM venta_detalle vd
+                JOIN productos p ON vd.id_producto = p.id_producto
+                WHERE vd.id_venta = ?
+            `, [venta.id_venta], (errItems, items) => {
+                if (errItems) return res.status(500).json({ error: errItems.message });
+                res.json({
+                    success: true,
+                    tipo: (venta.numero_delivery || venta.costo_delivery > 0) ? 'DELIVERY' : 'LOCAL',
+                    venta: {
+                        ...venta,
+                        direccion: venta.direccion_entrega || venta.direccion,
+                        telefono: venta.telefono_delivery || venta.telefono_cliente || venta.cliente_tel_db,
+                        items: items || []
+                    }
+                });
             });
-        });
+        } else {
+            // Buscar directamente en pedidos_delivery
+            db.get(`
+                SELECT pd.*, pd.numero_pedido AS numero_factura, pd.fecha_creacion AS fecha,
+                       mp.nombre AS metodo_pago_nombre, u.nombre AS cajero_nombre, pd.telefono AS cliente_tel_db
+                FROM pedidos_delivery pd
+                LEFT JOIN metodos_pago mp ON pd.id_metodo_pago = mp.id_metodo_pago
+                LEFT JOIN usuarios u ON pd.id_usuario = u.id_usuario
+                WHERE pd.numero_pedido = ? OR pd.id_pedido = ?
+            `, [num, parseInt(num) || 0], (errDel, pDel) => {
+                if (errDel) return res.status(500).json({ error: errDel.message });
+                if (!pDel) return res.status(404).json({ error: 'Comprobante no encontrado.' });
+
+                db.all(`
+                    SELECT pdd.*, p.nombre AS producto_nombre
+                    FROM pedido_delivery_detalle pdd
+                    JOIN productos p ON pdd.id_producto = p.id_producto
+                    WHERE pdd.id_pedido = ?
+                `, [pDel.id_pedido], (errIt, items) => {
+                    if (errIt) return res.status(500).json({ error: errIt.message });
+                    res.json({
+                        success: true,
+                        tipo: 'DELIVERY',
+                        venta: {
+                            ...pDel,
+                            items: items || []
+                        }
+                    });
+                });
+            });
+        }
     });
 });
 
@@ -1473,7 +1705,7 @@ app.get('/api/ventas', (req, res) => {
 // ==========================================
 // MÓDULO 6: REPORTES ANALÍTICOS ESTRATÉGICOS (RF-22)
 // ==========================================
-app.get('/api/reportes/dashboard', (req, res) => {
+app.get('/api/reportes/dashboard', verificarAdmin, (req, res) => {
     const periodo = (req.query.periodo || 'todo').toLowerCase();
 
     let whereVentas = 'WHERE 1=1';
@@ -1674,7 +1906,7 @@ app.get('/api/reportes/dashboard', (req, res) => {
 // ==========================================
 // MÓDULO 6 & NO FUNCIONAL: RESPALDOS LOCALES Y COPIAS DE SEGURIDAD (RF-23, RNF-05)
 // ==========================================
-app.get('/api/backups', (req, res) => {
+app.get('/api/backups', verificarAdmin, (req, res) => {
     try {
         const files = fs.readdirSync(backupsDir)
             .filter(f => f.endsWith('.db'))
@@ -1693,16 +1925,17 @@ app.get('/api/backups', (req, res) => {
     }
 });
 
-app.post('/api/backup/crear', (req, res) => {
+app.post('/api/backup/crear', verificarAdmin, (req, res) => {
     try {
         const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
         const filename = `backup_manual_${timestamp}.db`;
         const dest = path.join(backupsDir, filename);
 
         fs.copyFileSync(dbPath, dest);
+        purgarRespaldosAntiguos(1);
         res.json({
             success: true,
-            mensaje: 'Copia de seguridad local creada exitosamente.',
+            mensaje: 'Copia de seguridad local creada exitosamente (solo 1 respaldo conservado).',
             archivo: filename
         });
     } catch (err) {
@@ -1710,7 +1943,7 @@ app.post('/api/backup/crear', (req, res) => {
     }
 });
 
-app.get('/api/backup/descargar/:archivo', (req, res) => {
+app.get('/api/backup/descargar/:archivo', verificarAdmin, (req, res) => {
     const file = path.join(backupsDir, req.params.archivo);
     if (fs.existsSync(file)) {
         res.download(file);
@@ -1719,10 +1952,11 @@ app.get('/api/backup/descargar/:archivo', (req, res) => {
     }
 });
 
-// Iniciar servidor local
-const server = app.listen(PORT, () => {
+// Iniciar servidor local en todas las interfaces de red (0.0.0.0) para escaneo QR móvil
+const server = app.listen(PORT, '0.0.0.0', () => {
     console.log(`=======================================================`);
     console.log(`[OK] Servidor El Gustazo POS Activo en http://localhost:${PORT}`);
+    console.log(`[OK] Red Local LAN (Móvil QR): http://${getLocalIpAddress()}:${PORT}`);
     console.log(`[OK] Modo: 100% Offline | DB: SQLite3 | Sierra Maestra`);
     console.log(`=======================================================`);
 });

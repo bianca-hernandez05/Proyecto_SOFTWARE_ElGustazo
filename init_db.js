@@ -191,6 +191,7 @@ db.serialize(async () => {
         id_venta INTEGER,
         fecha_creacion DATETIME DEFAULT CURRENT_TIMESTAMP,
         fecha_entrega DATETIME,
+        archivado INTEGER DEFAULT 0,
         FOREIGN KEY (id_cliente) REFERENCES clientes(id_cliente),
         FOREIGN KEY (id_repartidor) REFERENCES repartidores(id_repartidor),
         FOREIGN KEY (id_caja) REFERENCES cajas(id_caja),

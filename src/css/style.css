@@ -409,55 +409,205 @@ body {
 }
 
 .product-card {
-    background: #FFFFFF;
+    background-color: #FFFFFF;
+    /* Gradiente sutil en las esquinas con los colores del logo (ámbar y naranja) */
+    background-image: 
+        radial-gradient(circle at top right, rgba(245, 158, 11, 0.13) 0%, transparent 60%),
+        radial-gradient(circle at bottom left, rgba(234, 88, 12, 0.06) 0%, transparent 50%);
     border: 1.5px solid #E2E8F0;
-    border-radius: var(--radius-md);
-    padding: 15px;
+    border-radius: 12px;
+    padding: 12px 14px 14px;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
     cursor: pointer;
-    min-height: 130px;
-    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.04);
+    min-height: 155px;
+    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease, border-color 0.2s ease;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.03);
     position: relative;
     user-select: none;
+    overflow: hidden;
+}
+
+/* Línea superior decorativa sutil con los colores del logo */
+.product-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #EA580C 0%, #F59E0B 100%);
+    opacity: 0.85;
+    border-top-left-radius: 12px;
+    border-top-right-radius: 12px;
 }
 
 .product-card:hover {
     transform: translateY(-3px);
-    border-color: var(--amber-gold);
-    box-shadow: 0 8px 16px rgba(245, 158, 11, 0.18);
+    border-color: #FB923C;
+    box-shadow: 0 8px 22px rgba(234, 88, 12, 0.12);
+    background-image: 
+        radial-gradient(circle at top right, rgba(245, 158, 11, 0.20) 0%, transparent 65%),
+        radial-gradient(circle at bottom left, rgba(234, 88, 12, 0.10) 0%, transparent 55%);
 }
 
 .product-card:active {
-    transform: scale(0.98);
+    transform: scale(0.97);
+}
+
+.product-card.clicked {
+    transform: scale(0.96);
+    border-color: #16A34A !important;
+    box-shadow: 0 0 0 4px rgba(22, 163, 74, 0.25) !important;
 }
 
 .product-card.is-combo {
-    border-left: 5px solid var(--amber-gold);
-    background: #FFFDF9;
+    border-left: 5px solid #F59E0B;
+    background-color: #FFFDF9;
+    background-image: 
+        radial-gradient(circle at top right, rgba(245, 158, 11, 0.18) 0%, transparent 65%),
+        radial-gradient(circle at bottom left, rgba(234, 88, 12, 0.08) 0%, transparent 50%);
+}
+
+.product-card.is-combo::before {
+    background: linear-gradient(90deg, #F59E0B 0%, #EA580C 100%);
+    height: 3.5px;
+}
+
+/* Fila Superior en Flujo Normal: [COMBO] a la izquierda y [Editar] a la derecha */
+.product-card-top-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 8px;
+    min-height: 24px;
+    width: 100%;
+}
+
+.product-tags-wrap {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    flex-wrap: wrap;
 }
 
 .product-badge-combo {
-    position: absolute;
-    top: 8px;
-    right: 8px;
-    background: var(--amber-light);
-    color: #9A3412;
-    font-size: 0.72rem;
+    background: #FEF3C7;
+    color: #92400E;
+    font-size: 0.7rem;
     font-weight: 800;
     padding: 2px 7px;
     border-radius: 4px;
-    border: 1px solid var(--amber-gold);
+    border: 1px solid #FCD34D;
+    letter-spacing: 0.4px;
+    display: inline-flex;
+    align-items: center;
 }
 
-.product-card h3 {
+.product-badge-cart-qty {
+    background: #DCFCE7;
+    color: #15803D;
+    font-size: 0.7rem;
+    font-weight: 800;
+    padding: 2px 7px;
+    border-radius: 4px;
+    border: 1px solid #86EFAC;
+    letter-spacing: 0.2px;
+    display: inline-flex;
+    align-items: center;
+}
+
+/* Botón Editar en la esquina superior derecha (como le gustaba al usuario) */
+.btn-card-edit {
+    background: #FFFFFF;
+    color: #475569;
+    border: 1.5px solid #CBD5E1;
+    border-radius: 6px;
+    padding: 2px 8px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    margin-left: auto;
+}
+
+.btn-card-edit:hover {
+    background: #0284C7;
+    color: #FFFFFF;
+    border-color: #0284C7;
+    box-shadow: 0 2px 6px rgba(2, 132, 199, 0.25);
+    transform: translateY(-1px);
+}
+
+.product-card-body {
+    flex: 1;
+    margin-bottom: 8px;
+}
+
+/* Título de Platillo: 100% de Ancho y Legibilidad Absoluta debajo del encabezado */
+.product-card h3, .product-title {
     font-size: 1.05rem;
     font-weight: 800;
     color: #0F172A;
-    margin-bottom: 6px;
-    line-height: 1.3;
+    margin: 0 0 4px 0;
+    line-height: 1.25;
+    width: 100%;
+    display: block;
+    word-break: break-word;
+}
+
+/* Billetes y Atajos de Cobro Rápido en Efectivo */
+.quick-cash-pills {
+    display: flex;
+    gap: 6px;
+    margin-top: 8px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.btn-quick-cash {
+    background: #F8FAFC;
+    border: 1px solid #CBD5E1;
+    color: #334155;
+    padding: 3px 9px;
+    font-size: 0.76rem;
+    font-weight: 700;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.btn-quick-cash:hover {
+    background: var(--primary-orange);
+    color: #FFFFFF;
+    border-color: var(--primary-orange);
+    transform: translateY(-1px);
+}
+
+.btn-quick-cash.exacto {
+    background: #ECFDF5;
+    border-color: #10B981;
+    color: #047857;
+}
+
+.btn-quick-cash.exacto:hover {
+    background: #10B981;
+    color: #FFFFFF;
+}
+
+.change-display.has-change {
+    background: #DCFCE7;
+    border-color: #86EFAC;
+}
+
+.change-display.has-change strong {
+    color: #15803D;
 }
 
 .product-card p.desc {
@@ -1233,6 +1383,60 @@ body {
 .status-badge.danger { background: var(--danger-bg); color: var(--danger); }
 .status-badge.warning { background: var(--warning-bg); color: var(--warning); }
 .status-badge.info { background: var(--info-bg); color: var(--info); }
+.status-badge.critical {
+    background: #FEE2E2;
+    color: #DC2626;
+    border: 1px solid #FCA5A5;
+    font-weight: 800;
+    box-shadow: 0 1px 3px rgba(220, 38, 38, 0.12);
+}
+
+/* Barra visual de stock relativo */
+.stock-meter-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+.stock-meter-bar {
+    width: 100%;
+    max-width: 110px;
+    height: 5px;
+    background: #E2E8F0;
+    border-radius: 4px;
+    overflow: hidden;
+}
+.stock-meter-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.3s ease;
+}
+.stock-meter-fill.critico { background: #DC2626; }
+.stock-meter-fill.saludable { background: #16A34A; }
+
+/* Botón WhatsApp PDF */
+.btn-whatsapp-pdf {
+    background: #25D366;
+    color: #FFFFFF;
+    border: none;
+    border-radius: var(--radius-sm);
+    padding: 9px 16px;
+    font-weight: 800;
+    font-size: 0.88rem;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    box-shadow: 0 3px 8px rgba(37, 211, 102, 0.28);
+    transition: all 0.2s ease;
+}
+.btn-whatsapp-pdf:hover {
+    background: #1EBE5D;
+    transform: translateY(-1px);
+    box-shadow: 0 5px 12px rgba(37, 211, 102, 0.38);
+}
+.btn-whatsapp-pdf:active {
+    transform: translateY(0);
+}
 
 /* =========================================================
    MODALES (Ticket ESC/POS, WhatsApp, Caja, Nuevo Cliente)
@@ -1621,18 +1825,20 @@ body {
     min-height: 120px;
 }
 
-.delivery-card {
+.delivery-card, .kanban-card {
     background: #FFFFFF;
     border: 1.5px solid #CBD5E1;
-    border-radius: var(--radius-sm);
+    border-radius: 10px;
     padding: 12px;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+    position: relative;
 }
 
-.delivery-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+.delivery-card:hover, .kanban-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 14px rgba(0, 0, 0, 0.09);
+    border-color: #94A3B8;
 }
 
 .card-header-row {
@@ -1640,6 +1846,135 @@ body {
     justify-content: space-between;
     align-items: center;
     margin-bottom: 6px;
+    gap: 6px;
+}
+
+/* Indicador de Tiempo Transcurrido / Cronómetro de Urgencia */
+.card-time-badge {
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    line-height: 1.2;
+}
+
+.card-time-badge.time-alerta-monitoreo {
+    background: #FFFBEB;
+    color: #B45309;
+    border: 1px solid #FDE68A;
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.card-time-badge.time-normal {
+    background: #F1F5F9;
+    color: #475569;
+    border: 1px solid #CBD5E1;
+}
+
+/* Botón para archivar todos los pedidos entregados en la cabecera de la columna */
+.btn-archive-delivered {
+    background: #059669;
+    color: #FFFFFF;
+    border: none;
+    border-radius: 5px;
+    padding: 3px 8px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    transition: all 0.15s ease;
+}
+
+.btn-archive-delivered:hover {
+    background: #047857;
+    transform: translateY(-1px);
+}
+
+/* Botón individual para archivar una tarjeta entregada */
+.btn-card-archive {
+    background: #0D9488;
+    color: #FFFFFF;
+    border: none;
+    border-radius: 4px;
+    padding: 3px 8px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+}
+
+.btn-card-archive:hover {
+    background: #0F766E;
+    transform: translateY(-1px);
+}
+
+/* Botón para que el administrador elimine pedidos de prueba */
+.btn-order-delete {
+    background: #EF4444 !important;
+    color: #FFFFFF !important;
+}
+
+.btn-order-delete:hover {
+    background: #DC2626 !important;
+}
+
+/* Barra de Progreso Pipeline Visual de 5 Pasos */
+.card-pipeline-bar {
+    display: flex;
+    gap: 4px;
+    margin: 6px 0 8px;
+    padding: 3px;
+    background: #F1F5F9;
+    border-radius: 6px;
+    border: 1px solid #E2E8F0;
+}
+
+.pipeline-step {
+    flex: 1;
+    height: 5px;
+    border-radius: 3px;
+    background: #CBD5E1;
+    transition: all 0.3s ease;
+}
+
+.pipeline-step.completed {
+    background: #16A34A;
+}
+
+.pipeline-step.active {
+    background: #EA580C;
+    box-shadow: 0 0 6px rgba(234, 88, 12, 0.6);
+}
+
+/* Animación de Ítem Volando hacia Comanda (Micro-interacción POS) */
+.flyer-item {
+    position: fixed;
+    z-index: 99999;
+    pointer-events: none;
+    background: #EA580C;
+    color: #FFFFFF;
+    font-weight: 800;
+    font-size: 0.82rem;
+    padding: 5px 12px;
+    border-radius: 20px;
+    box-shadow: 0 8px 24px rgba(234, 88, 12, 0.45);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    border: 1.5px solid #FFFFFF;
+    transition: transform 0.45s cubic-bezier(0.2, 0.8, 0.25, 1), opacity 0.45s ease;
 }
 
 .card-pedido-num {
@@ -2235,36 +2570,143 @@ body {
    ESTILOS DE IMPRESIÓN DIRECTA MULTI-FORMATO (TICKET Y FACTURA)
    ========================================================= */
 @media print {
-    body * {
-        visibility: hidden;
+    /* Reset total de la página para impresión */
+    html, body {
+        background: #FFFFFF !important;
+        color: #000000 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        height: auto !important;
+        min-height: 100% !important;
+        overflow: visible !important;
     }
 
-    #printable-thermal-ticket, #printable-thermal-ticket * {
-        visibility: visible;
+    /* Ocultar elementos de navegación, botones y UI general */
+    header,
+    nav,
+    main,
+    .nav-menu,
+    .user-status,
+    .catalog-section,
+    .billing-section,
+    .delivery-top-bar,
+    .delivery-kpis-grid,
+    .kanban-board-grid,
+    .delivery-container,
+    .dashboard-container,
+    .modal-backdrop:not(.open),
+    .modal-header,
+    .modal-footer,
+    .comprobante-tabs-bar,
+    button,
+    .btn-charge,
+    .btn-small,
+    .btn-thermal,
+    .btn-whatsapp,
+    .modal-close-btn,
+    #toast-container {
+        display: none !important;
+        visibility: hidden !important;
     }
+
+    /* Desactivar fondo oscuro y scroll del modal abierto */
+    .modal-backdrop.open {
+        position: static !important;
+        display: block !important;
+        background: transparent !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        width: 100% !important;
+        height: auto !important;
+        overflow: visible !important;
+        box-shadow: none !important;
+    }
+
+    .modal-backdrop.open .modal-box {
+        position: static !important;
+        display: block !important;
+        background: transparent !important;
+        box-shadow: none !important;
+        border: none !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        max-width: 100% !important;
+        width: 100% !important;
+        overflow: visible !important;
+    }
+
+    .modal-backdrop.open .modal-body {
+        position: static !important;
+        display: block !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        max-height: none !important;
+        overflow: visible !important;
+    }
+
+    /* Factura Comercial (Tanto en POS como en Delivery) */
+    #vista-factura-comercial,
+    #factura-delivery-sheet,
+    .factura-comercial-sheet {
+        display: block !important;
+        visibility: visible !important;
+        position: static !important;
+        width: 100% !important;
+        max-width: 800px !important;
+        margin: 0 auto !important;
+        padding: 12mm 16mm !important;
+        background: #FFFFFF !important;
+        border: 1px solid #CBD5E1 !important;
+        border-radius: 6px !important;
+        box-shadow: none !important;
+        box-sizing: border-box !important;
+        page-break-inside: avoid !important;
+    }
+
+    #vista-factura-comercial *,
+    #factura-delivery-sheet *,
+    .factura-comercial-sheet * {
+        visibility: visible !important;
+        color: #000000 !important;
+    }
+
+    /* Colores y contrastes clave en la impresión */
+    .factura-empresa-titulo {
+        color: #0F172A !important;
+    }
+    .factura-badge {
+        background: #EA580C !important;
+        color: #FFFFFF !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+    .fac-grand-total strong,
+    #fac-total,
+    #fac-del-total {
+        color: #15803D !important;
+        font-size: 1.35rem !important;
+    }
+
+    /* Ticket Térmico Portátil / Cocina */
     #printable-thermal-ticket {
-        position: absolute;
-        left: 0;
-        top: 0;
-        width: 80mm;
-        margin: 0;
-        padding: 4mm;
-        font-family: 'Courier New', monospace;
-        font-size: 12px;
-        color: #000;
+        display: block !important;
+        visibility: visible !important;
+        position: static !important;
+        width: 80mm !important;
+        margin: 0 auto !important;
+        padding: 4mm !important;
+        font-family: 'Courier New', Courier, monospace !important;
+        font-size: 12px !important;
+        color: #000000 !important;
+        background: #FFFFFF !important;
+        border: none !important;
+        box-shadow: none !important;
+        page-break-inside: avoid !important;
     }
 
-    #vista-factura-comercial, #vista-factura-comercial * {
-        visibility: visible;
-    }
-    #vista-factura-comercial {
-        position: absolute;
-        left: 0;
-        top: 0;
-        width: 100%;
-        border: none;
-        box-shadow: none;
-        padding: 0;
+    #printable-thermal-ticket * {
+        visibility: visible !important;
+        color: #000000 !important;
     }
 }
 
@@ -2469,6 +2911,19 @@ body {
     transform: scale(1.05);
     transition: opacity 0.85s cubic-bezier(0.4, 0, 0.2, 1), transform 0.85s cubic-bezier(0.4, 0, 0.2, 1);
     pointer-events: none;
+    background: #0F172A;
+}
+
+.carousel-slide#slide-0 {
+    background: radial-gradient(circle at 60% 40%, #7C2D12 0%, #1E1B4B 60%, #0F172A 100%);
+}
+
+.carousel-slide#slide-1 {
+    background: radial-gradient(circle at 40% 50%, #1E3A8A 0%, #0F172A 70%, #020617 100%);
+}
+
+.carousel-slide#slide-2 {
+    background: radial-gradient(circle at 50% 50%, #064E3B 0%, #0F172A 70%, #020617 100%);
 }
 
 .carousel-slide.active {
@@ -2482,6 +2937,17 @@ body {
     height: 100%;
     object-fit: cover;
     display: block;
+    background-color: transparent;
+}
+
+/* Animación de giro para el botón de refresco */
+.spin-animation {
+    animation: spinRefresh 0.75s linear infinite;
+}
+
+@keyframes spinRefresh {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
 }
 
 .carousel-slide-overlay {
@@ -2842,5 +3308,212 @@ body {
 
     .login-form-panel {
         padding: 26px 20px;
+    }
+}
+
+/* ==========================================
+   MASCOTA INTERACTIVA CHEF GUSTAZO (LOGIN)
+   ========================================== */
+.mascot-wrapper {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 6px;
+    filter: drop-shadow(0 6px 14px rgba(234, 88, 12, 0.18));
+    transition: transform 0.3s ease;
+}
+
+.mascot-wrapper:hover {
+    transform: scale(1.04);
+}
+
+.mascot-svg {
+    width: 95px;
+    height: 88px;
+    overflow: visible;
+}
+
+.mascot-hand {
+    transition: transform 0.38s cubic-bezier(0.34, 1.56, 0.64, 1);
+    transform-origin: center;
+}
+
+.mascot-eyes {
+    transition: transform 0.25s ease;
+}
+
+/* Estados de interacción de la mascota */
+.mascot-wrapper.looking-down .mascot-eyes {
+    transform: translateY(4px);
+}
+
+.mascot-wrapper.covering-eyes #mascot-hand-left {
+    transform: translate(14px, -41px) rotate(-8deg);
+}
+
+.mascot-wrapper.covering-eyes #mascot-hand-right {
+    transform: translate(-14px, -41px) rotate(8deg);
+}
+
+.mascot-wrapper.peeking #mascot-hand-left {
+    transform: translate(14px, -41px) rotate(-8deg);
+}
+
+.mascot-wrapper.peeking #mascot-hand-right {
+    transform: translate(-10px, -20px) rotate(35deg);
+}
+
+.mascot-wrapper.peeking .mascot-eyes {
+    transform: translate(3px, -1px);
+}
+
+/* ==========================================
+   MENÚ Y CATÁLOGO POS INTERACTIVO (WOW UX)
+   ========================================== */
+/* Micro-interacción: Onda de clic en tarjeta */
+.product-card::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    background: rgba(234, 88, 12, 0.25);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    opacity: 0;
+    pointer-events: none;
+    transition: width 0.35s ease-out, height 0.35s ease-out, opacity 0.35s ease-out;
+    z-index: 5;
+}
+
+.product-card.clicked::after {
+    width: 280px;
+    height: 280px;
+    opacity: 1;
+}
+
+/* Pastilla animada al agregar al carrito */
+@keyframes cartPulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.18); color: #EA580C; }
+    100% { transform: scale(1); }
+}
+
+.cart-bounce-feedback {
+    animation: cartPulse 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Botones de categorías dinámicos */
+.cat-btn {
+    transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.cat-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+}
+
+.cat-btn:active {
+    transform: scale(0.96);
+}
+
+/* =========================================================
+   MEDIDORES VISUALES DE STOCK INTERACTIVOS (INVENTARIO)
+   ========================================================= */
+.stock-meter-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 120px;
+}
+
+.stock-meter-bar {
+    width: 100%;
+    height: 8px;
+    background: #E2E8F0;
+    border-radius: 6px;
+    overflow: hidden;
+    position: relative;
+    box-shadow: inset 0 1px 2px rgba(0,0,0,0.1);
+}
+
+.stock-meter-fill {
+    height: 100%;
+    border-radius: 6px;
+    transition: width 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.stock-meter-fill.critico {
+    background: linear-gradient(90deg, #EF4444 0%, #DC2626 100%);
+    box-shadow: 0 0 6px rgba(220, 38, 38, 0.5);
+}
+
+.stock-meter-fill.saludable {
+    background: linear-gradient(90deg, #22C55E 0%, #16A34A 100%);
+    box-shadow: 0 0 6px rgba(22, 163, 74, 0.4);
+}
+
+/* ========================================================
+   REGLAS DE IMPRESIÓN OFFLINE Y TICKET TÉRMICO (58mm / 80mm)
+   ======================================================== */
+#printable-thermal-ticket {
+    display: none;
+}
+
+@media print {
+    /* Ocultar elementos de interfaz no imprimibles */
+    .sidebar,
+    .top-header,
+    .app-header,
+    .modal-footer,
+    .btn-charge,
+    .btn-thermal,
+    .btn-small,
+    .modal-close-btn,
+    .menu-top-toolbar,
+    .role-chips-container,
+    .btn-login-glow,
+    .pos-summary-bar,
+    .catalog-toolbar,
+    .ambient-glow-orb {
+        display: none !important;
+    }
+
+    /* Si se imprime ticket térmico exclusivo */
+    body.imprimiendo-ticket > *:not(#printable-thermal-ticket),
+    body:has(#printable-thermal-ticket.activo) > *:not(#printable-thermal-ticket) {
+        display: none !important;
+    }
+
+    #printable-thermal-ticket.activo,
+    body.imprimiendo-ticket #printable-thermal-ticket {
+        display: block !important;
+        position: absolute !important;
+        left: 0 !important;
+        top: 0 !important;
+        width: 100% !important;
+        max-width: 78mm !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        background: #FFFFFF !important;
+        color: #000000 !important;
+        font-family: 'Courier New', Courier, monospace !important;
+        font-size: 12px !important;
+        line-height: 1.25 !important;
+    }
+
+    #printable-thermal-ticket pre {
+        margin: 0 !important;
+        padding: 0 !important;
+        white-space: pre-wrap !important;
+        font-family: 'Courier New', Courier, monospace !important;
+        font-size: 12px !important;
+        color: #000000 !important;
+    }
+
+    @page {
+        margin: 0;
+        size: auto;
     }
 }
