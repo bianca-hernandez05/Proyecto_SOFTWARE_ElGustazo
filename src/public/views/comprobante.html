@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Factura Digital - El Gustazo</title>
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    <link rel="stylesheet" href="css/style.css?v=2.8">
+    <style>
+        .comp-page-wrap {
+            min-height: 100vh;
+            background: #F1F5F9;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px 14px;
+        }
+
+        .comp-container {
+            width: 100%;
+            max-width: 650px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .comp-card-sheet {
+            background: #FFFFFF;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 0 15px rgba(245, 158, 11, 0.1);
+            border: 1px solid #E2E8F0;
+            overflow: hidden;
+            padding: 24px;
+        }
+
+        /* Estilo idéntico a la hoja de factura comercial física / PDF */
+        .comp-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            border-bottom: 2px solid #E2E8F0;
+            padding-bottom: 16px;
+            margin-bottom: 16px;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .comp-brand {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .comp-logo {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            border: 2px solid #F59E0B;
+            object-fit: cover;
+        }
+
+        .comp-title {
+            font-size: 1.15rem;
+            font-weight: 900;
+            color: #0F172A;
+            margin: 0 0 3px 0;
+            letter-spacing: -0.3px;
+        }
+
+        .comp-sub {
+            font-size: 0.78rem;
+            color: #64748B;
+            margin: 0 0 2px 0;
+        }
+
+        .comp-fiscal {
+            text-align: right;
+        }
+
+        .comp-badge {
+            display: inline-block;
+            background: #FEF3C7;
+            color: #B45309;
+            font-size: 0.72rem;
+            font-weight: 800;
+            padding: 3px 10px;
+            border-radius: 12px;
+            border: 1px solid #FCD34D;
+            margin-bottom: 6px;
+            text-transform: uppercase;
+        }
+
+        .comp-badge.delivery {
+            background: #FFF7ED;
+            color: #1D4ED8;
+            border-color: #BFDBFE;
+        }
+
+        .comp-num {
+            font-size: 1.25rem;
+            font-weight: 900;
+            color: #EA580C;
+        }
+
+        .comp-fecha {
+            font-size: 0.78rem;
+            color: #64748B;
+            font-weight: 600;
+        }
+
+        .comp-meta-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 12px;
+            background: #F8FAFC;
+            padding: 14px 16px;
+            border-radius: 8px;
+            border: 1px solid #E2E8F0;
+            margin-bottom: 18px;
+        }
+
+        .comp-meta-item strong {
+            display: block;
+            color: #64748B;
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 2px;
+        }
+
+        .comp-meta-item span {
+            color: #0F172A;
+            font-weight: 700;
+            font-size: 0.88rem;
+        }
+
+        .comp-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 18px;
+            font-size: 0.88rem;
+        }
+
+        .comp-table th {
+            text-align: left;
+            padding: 9px 8px;
+            background: #F1F5F9;
+            color: #475569;
+            font-size: 0.76rem;
+            text-transform: uppercase;
+            font-weight: 800;
+            border-bottom: 2px solid #CBD5E1;
+        }
+
+        .comp-table td {
+            padding: 10px 8px;
+            border-bottom: 1px solid #F1F5F9;
+            color: #1E293B;
+        }
+
+        .comp-resumen-grid {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 18px;
+        }
+
+        .comp-totales-box {
+            width: 100%;
+            max-width: 280px;
+            background: #FFFBEB;
+            border: 1.5px dashed #F59E0B;
+            border-radius: 10px;
+            padding: 12px 16px;
+        }
+
+        .comp-total-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.88rem;
+            color: #475569;
+            margin-bottom: 5px;
+        }
+
+        .comp-total-row.grand {
+            font-size: 1.25rem;
+            font-weight: 900;
+            color: #EA580C;
+            border-top: 1px solid #FDE68A;
+            padding-top: 8px;
+            margin-top: 6px;
+        }
+
+        .comp-pago-info {
+            font-size: 0.78rem;
+            color: #64748B;
+            margin-top: 6px;
+            text-align: right;
+            font-weight: 600;
+        }
+
+        .comp-footer-msg {
+            text-align: center;
+            border-top: 1px solid #E2E8F0;
+            padding-top: 14px;
+            color: #64748B;
+            font-size: 0.82rem;
+        }
+
+        .comp-footer-msg p {
+            margin: 0 0 4px 0;
+            font-weight: 600;
+            color: #334155;
+        }
+
+        .comp-actions-bar {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn-action-pdf {
+            flex: 1;
+            min-width: 180px;
+            background: #EA580C;
+            color: #FFFFFF;
+            font-weight: 800;
+            padding: 12px 18px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-size: 0.9rem;
+            box-shadow: 0 4px 10px rgba(234, 88, 12, 0.25);
+            transition: all 0.2s ease;
+        }
+
+        .btn-action-pdf:hover {
+            background: #C2410C;
+            transform: translateY(-1px);
+        }
+
+        .btn-action-wa {
+            flex: 1;
+            min-width: 180px;
+            background: #25D366;
+            color: #FFFFFF;
+            font-weight: 800;
+            padding: 12px 18px;
+            border-radius: 8px;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-size: 0.9rem;
+            box-shadow: 0 4px 10px rgba(37, 211, 102, 0.25);
+            transition: all 0.2s ease;
+        }
+
+        .btn-action-wa:hover {
+            background: #1EBE5D;
+            transform: translateY(-1px);
+        }
+
+        .btn-action-print {
+            background: #B45309;
+            color: #FFFFFF;
+            font-weight: 700;
+            padding: 12px 16px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            font-size: 0.9rem;
+        }
+
+        @media print {
+            body {
+                background: #FFFFFF !important;
+            }
+            .comp-page-wrap {
+                padding: 0 !important;
+                background: #FFFFFF !important;
+            }
+            .comp-actions-bar {
+                display: none !important;
+            }
+            .comp-card-sheet {
+                box-shadow: none !important;
+                border: none !important;
+                padding: 0 !important;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="comp-page-wrap">
+        <div class="comp-container">
+            <!-- Hoja de Factura Digital (Idéntica al PDF) -->
+            <div class="comp-card-sheet" id="factura-digital-sheet">
+                <div class="comp-header">
+                    <div class="comp-brand">
+                        <img src="img/logo.jpg" alt="Logo El Gustazo" class="comp-logo">
+                        <div>
+                            <h1 class="comp-title">EL BUEN GUSTO - EL GUSTAZO</h1>
+                            <p class="comp-sub">A tu Paladar - Sierra Maestra, Managua</p>
+                            <p class="comp-sub">Teléfono: (505) 8899-7711 / 8765-4321</p>
+                        </div>
+                    </div>
+                    <div class="comp-fiscal">
+                        <span id="fac-tipo-badge" class="comp-badge">FACTURA COMERCIAL</span>
+                        <div class="comp-num" id="txt-fac-num">Cargando...</div>
+                        <div class="comp-fecha" id="txt-fac-fecha">--/--/----</div>
+                    </div>
+                </div>
+
+                <div class="comp-meta-grid">
+                    <div class="comp-meta-item">
+                        <strong>CLIENTE:</strong>
+                        <span id="txt-fac-cliente">Consumidor Final</span>
+                    </div>
+                    <div class="comp-meta-item">
+                        <strong>TELÉFONO:</strong>
+                        <span id="txt-fac-telefono">--</span>
+                    </div>
+                    <div class="comp-meta-item" id="meta-repartidor-box" style="display:none;">
+                        <strong>REPARTIDOR:</strong>
+                        <span id="txt-fac-repartidor">Por asignar</span>
+                    </div>
+                    <div class="comp-meta-item" id="meta-direccion-box" style="display:none;">
+                        <strong>DIRECCIÓN DE ENTREGA:</strong>
+                        <span id="txt-fac-direccion">Sierra Maestra</span>
+                    </div>
+                </div>
+
+                <table class="comp-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 50px; text-align: center;">Cant</th>
+                            <th>Descripción</th>
+                            <th style="text-align: right; width: 90px;">P. Unit</th>
+                            <th style="text-align: right; width: 95px;">Subtotal</th>
+                        </tr>
+                    </thead>
+                    <tbody id="comp-items-body">
+                        <tr>
+                            <td colspan="4" style="text-align: center; color: #94A3B8; padding: 20px;">
+                                Cargando detalle de la factura...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div class="comp-resumen-grid">
+                    <div class="comp-totales-box">
+                        <div class="comp-total-row">
+                            <span>Subtotal:</span>
+                            <strong id="txt-fac-subtotal">C$ 0.00</strong>
+                        </div>
+                        <div class="comp-total-row" id="row-fac-envio" style="display: none;">
+                            <span>Envío Delivery:</span>
+                            <strong id="txt-fac-envio">C$ 0.00</strong>
+                        </div>
+                        <div class="comp-total-row grand">
+                            <span>TOTAL:</span>
+                            <strong id="txt-fac-total">C$ 0.00</strong>
+                        </div>
+                        <div class="comp-pago-info" id="txt-fac-pago">Pago: Efectivo</div>
+                    </div>
+                </div>
+
+                <div class="comp-footer-msg">
+                    <p>¡Muchas gracias por su preferencia! Que disfrute su comida en casa.</p>
+                    <small>El Gustazo - Sierra Maestra</small>
+                </div>
+            </div>
+
+            <!-- Botones de Acción Interactivos -->
+            <div class="comp-actions-bar">
+                <button type="button" class="btn-action-pdf" onclick="descargarFacturaPDF()">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                        <line x1="12" y1="18" x2="12" y2="12"></line>
+                        <line x1="9" y1="15" x2="15" y2="15"></line>
+                    </svg>
+                    Descargar Factura PDF
+                </button>
+
+
+
+                <button type="button" class="btn-action-print" onclick="window.print()">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="6 9 6 2 18 2 18 9" />
+                        <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
+                        <rect x="6" y="14" width="12" height="8" />
+                    </svg>
+                    Imprimir
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/html2pdf.bundle.min.js"></script>
+    <script>
+        let facturaActualData = null;
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const fac = urlParams.get('fac') || urlParams.get('id');
+
+            if (!fac) {
+                document.getElementById('txt-fac-num').innerText = 'Sin especificar';
+                return;
+            }
+
+            try {
+                const res = await fetch(`/api/ventas/comprobante/${encodeURIComponent(fac)}`);
+                const data = await res.json();
+
+                if (data.success && data.venta) {
+                    facturaActualData = data.venta;
+                    const v = data.venta;
+                    const esDelivery = data.tipo === 'DELIVERY' || v.costo_delivery > 0 || (v.numero_factura && v.numero_factura.startsWith('DEL-'));
+
+                    const badge = document.getElementById('fac-tipo-badge');
+                    if (esDelivery) {
+                        badge.innerText = 'ENTREGA A DOMICILIO';
+                        badge.classList.add('delivery');
+                    } else {
+                        badge.innerText = 'FACTURA COMERCIAL';
+                        badge.classList.remove('delivery');
+                    }
+
+                    document.getElementById('txt-fac-num').innerText = `#${v.numero_factura}`;
+                    document.getElementById('txt-fac-fecha').innerText = v.fecha ? new Date(v.fecha).toLocaleString('es-NI') : new Date().toLocaleString('es-NI');
+                    document.getElementById('txt-fac-cliente').innerText = v.cliente_nombre || 'Consumidor Final';
+                    document.getElementById('txt-fac-telefono').innerText = v.telefono || v.cliente_tel_db || 'Sin teléfono';
+
+                    if (esDelivery) {
+                        if (v.repartidor) {
+                            document.getElementById('meta-repartidor-box').style.display = 'block';
+                            document.getElementById('txt-fac-repartidor').innerText = v.repartidor;
+                        }
+                        if (v.direccion) {
+                            document.getElementById('meta-direccion-box').style.display = 'block';
+                            document.getElementById('txt-fac-direccion').innerText = v.direccion;
+                        }
+                    }
+
+                    const refTxt = v.referencia_transferencia ? ` (Ref: ${v.referencia_transferencia})` : '';
+                    const pagoLabel = `${v.metodo_pago_nombre || 'Efectivo'}${v.banco ? ' ' + v.banco : ''}${refTxt}`;
+                    document.getElementById('txt-fac-pago').innerText = `Pago: ${pagoLabel}`;
+
+                    document.getElementById('txt-fac-subtotal').innerText = `C$ ${parseFloat(v.subtotal).toFixed(2)}`;
+                    if (v.costo_delivery > 0) {
+                        document.getElementById('row-fac-envio').style.display = 'flex';
+                        document.getElementById('txt-fac-envio').innerText = `C$ ${parseFloat(v.costo_delivery).toFixed(2)}`;
+                    }
+                    document.getElementById('txt-fac-total').innerText = `C$ ${parseFloat(v.total).toFixed(2)}`;
+
+                    const tbody = document.getElementById('comp-items-body');
+                    tbody.innerHTML = '';
+                    let waItemsTxt = '';
+                    (v.items || []).forEach(it => {
+                        const tr = document.createElement('tr');
+                        const cant = parseInt(it.cantidad || 1);
+                        const prec = parseFloat(it.precio_unitario || it.precio || 0);
+                        const sub = parseFloat(it.subtotal || (cant * prec));
+                        tr.innerHTML = `
+                            <td style="text-align: center; font-weight: 700; color: #EA580C;">${cant}</td>
+                            <td><strong>${it.producto_nombre || it.nombre || 'Platillo'}</strong></td>
+                            <td style="text-align: right;">C$ ${prec.toFixed(2)}</td>
+                            <td style="text-align: right; font-weight: 700;">C$ ${sub.toFixed(2)}</td>
+                        `;
+                        tbody.appendChild(tr);
+                        waItemsTxt += `• ${cant}x ${it.producto_nombre || it.nombre || 'Platillo'} - C$ ${sub.toFixed(2)}\n`;
+                    });
+
+                    // Enlace de WhatsApp
+                    const waMsg = `*EL BUEN GUSTO - EL GUSTAZO*\n` +
+                        `*Factura:* ${v.numero_factura}\n` +
+                        `*Cliente:* ${v.cliente_nombre || 'Consumidor Final'}\n` +
+                        `------------------------------------\n` +
+                        waItemsTxt +
+                        `------------------------------------\n` +
+                        `*TOTAL: C$ ${parseFloat(v.total).toFixed(2)}*\n` +
+                        `Pago: ${pagoLabel}\n` +
+                        `¡Muchas gracias por su preferencia!`;
+
+
+                } else {
+                    document.getElementById('txt-fac-num').innerText = 'No encontrada';
+                }
+            } catch (e) {
+                document.getElementById('txt-fac-num').innerText = 'Error al cargar';
+            }
+        });
+
+        async function descargarFacturaPDF() {
+            if (!facturaActualData) return;
+            const sheet = document.getElementById('factura-digital-sheet');
+            const num = facturaActualData.numero_factura || 'Comprobante';
+            const filename = `Factura_ElGustazo_${num}.pdf`;
+
+            const opt = {
+                margin: [8, 8, 8, 8],
+                filename: filename,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2, useCORS: true, logging: false },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+
+            if (window.html2pdf) {
+                html2pdf().set(opt).from(sheet).save();
+            } else {
+                window.print();
+            }
+        }
+    </script>
+</body>
+
+</html>

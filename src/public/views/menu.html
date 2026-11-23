@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Menú Oficial Dinámico - El Gustazo • Sierra Maestra</title>
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    <link rel="stylesheet" href="css/style.css?v=2.6">
+    <style>
+        /* ========================================================
+           DISEÑO DEL MENÚ OFICIAL (INSPIRADO EN EL MENÚ FÍSICO)
+           Estilo Pizarra Oscura, Bandas Naranjas y Carga 100% Dinámica
+           ======================================================== */
+        :root {
+            --menu-bg: #111418;
+            --menu-card-bg: #1A1F26;
+            --menu-orange: #EA580C;
+            --menu-orange-bright: #F97316;
+            --menu-gold: #F59E0B;
+            --menu-text-white: #FFFFFF;
+            --menu-text-muted: #94A3B8;
+        }
+
+        body.menu-body {
+            background-color: var(--menu-bg);
+            color: var(--menu-text-white);
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            margin: 0;
+            padding: 20px 10px 40px 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* Barra de Acciones Superior (No imprimible) */
+        .menu-top-toolbar {
+            width: 100%;
+            max-width: 1100px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #7C2D12;
+            padding: 12px 20px;
+            border-radius: 12px;
+            margin-bottom: 24px;
+            border: 1px solid #334155;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+            box-sizing: border-box;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .menu-toolbar-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .menu-toolbar-logo {
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            border: 2px solid var(--menu-orange);
+            object-fit: cover;
+            background: #FBBF24;
+        }
+
+        .menu-toolbar-title {
+            font-size: 1rem;
+            font-weight: 800;
+            color: #FFFFFF;
+            margin: 0;
+        }
+
+        .menu-toolbar-subtitle {
+            font-size: 0.75rem;
+            color: var(--menu-text-muted);
+            margin: 0;
+        }
+
+        .menu-toolbar-actions {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .btn-menu-action {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            cursor: pointer;
+            text-decoration: none;
+            border: none;
+            transition: all 0.2s ease;
+        }
+
+        .btn-menu-pdf {
+            background: #DC2626;
+            color: #FFFFFF;
+        }
+
+        .btn-menu-pdf:hover {
+            background: #B91C1C;
+            transform: translateY(-1px);
+        }
+
+        .btn-menu-wa {
+            background: #25D366;
+            color: #FFFFFF;
+        }
+
+        .btn-menu-wa:hover {
+            background: #1EBE5D;
+            transform: translateY(-1px);
+        }
+
+        .btn-menu-back {
+            background: #475569;
+            color: #FFFFFF;
+        }
+
+        .btn-menu-back:hover {
+            background: #9A3412;
+        }
+
+        /* Hoja Imprimible / Menú Físico Container */
+        #menu-printable-sheet {
+            width: 100%;
+            max-width: 1100px;
+            background: #14171D;
+            border: 2px solid #334155;
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
+            box-sizing: border-box;
+            position: relative;
+        }
+
+        /* Encabezado Principal del Menú con Logo Original */
+        .menu-main-header {
+            text-align: center;
+            padding-bottom: 20px;
+            border-bottom: 2px dashed #334155;
+            margin-bottom: 24px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .menu-main-logo-wrap {
+            margin-bottom: 12px;
+        }
+
+        .menu-main-logo {
+            width: 95px;
+            height: 95px;
+            border-radius: 50%;
+            border: 3.5px solid var(--menu-orange);
+            object-fit: cover;
+            box-shadow: 0 0 22px rgba(234, 88, 12, 0.55), 0 4px 10px rgba(0, 0, 0, 0.5);
+            background: #FBBF24;
+        }
+
+        .menu-hero-title {
+            font-size: 1.85rem;
+            font-weight: 900;
+            color: #FFFFFF;
+            margin: 0 0 6px 0;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+
+        .menu-hero-subtitle {
+            font-size: 0.95rem;
+            color: var(--menu-gold);
+            font-weight: 700;
+            margin: 0 0 6px 0;
+        }
+
+        .menu-hero-address {
+            font-size: 0.8rem;
+            color: #94A3B8;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        /* Rejilla Principal de Secciones (3 Columnas Dinámicas) */
+        .menu-columns-grid {
+            display: grid;
+            grid-template-columns: 1fr 1.15fr 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 900px) {
+            .menu-columns-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .menu-col {
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+        }
+
+        /* Bloque de Categoría Dinámico */
+        .menu-category-block {
+            background: #1B222D;
+            border: 1px solid #2A3649;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+            -webkit-column-break-inside: avoid !important;
+        }
+
+        /* Banner de Encabezado de Categoría */
+        .menu-cat-header {
+            background: var(--menu-orange);
+            color: #FFFFFF;
+            padding: 8px 14px;
+            font-size: 0.92rem;
+            font-weight: 900;
+            letter-spacing: 1.2px;
+            text-transform: uppercase;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #C2410C;
+        }
+
+        .menu-cat-header.header-alt {
+            background: #D97706;
+            border-bottom: 2px solid #B45309;
+        }
+
+        .menu-cat-header.header-special {
+            background: linear-gradient(135deg, #EA580C, #C2410C);
+        }
+
+        .menu-cat-title-with-lines {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Lista de Items Dinámicos */
+        .menu-items-list {
+            padding: 10px 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 9px;
+        }
+
+        .menu-item-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            border-bottom: 1px dashed rgba(255, 255, 255, 0.08);
+            padding-bottom: 7px;
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+        }
+
+        .menu-main-header,
+        .menu-footer-notes {
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+        }
+
+        .menu-item-row:last-child {
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+
+        .menu-item-info {
+            flex: 1;
+            padding-right: 10px;
+        }
+
+        .menu-item-name {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: #F8FAFC;
+            margin: 0 0 2px 0;
+        }
+
+        .menu-item-name.is-combo {
+            color: #F59E0B;
+        }
+
+        .menu-item-desc {
+            font-size: 0.72rem;
+            color: #94A3B8;
+            margin: 0;
+            line-height: 1.3;
+        }
+
+        .menu-item-price {
+            font-size: 0.88rem;
+            font-weight: 900;
+            color: var(--menu-gold);
+            white-space: nowrap;
+            text-align: right;
+        }
+
+        /* Pie del Menú */
+        .menu-footer-notes {
+            text-align: center;
+            margin-top: 24px;
+            padding-top: 18px;
+            border-top: 2px dashed #334155;
+            color: #94A3B8;
+            font-size: 0.8rem;
+        }
+
+        .menu-footer-phone {
+            font-size: 1.05rem;
+            font-weight: 800;
+            color: var(--menu-orange-bright);
+            margin-top: 4px;
+        }
+
+        /* Modal para Envío por WhatsApp con PDF */
+        .modal-wa-prompt {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(4px);
+            z-index: 9999;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .modal-wa-prompt.open {
+            display: flex;
+        }
+
+        .modal-wa-box {
+            background: #7C2D12;
+            border: 1px solid #334155;
+            border-radius: 14px;
+            max-width: 480px;
+            width: 100%;
+            padding: 24px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+            color: #FFFFFF;
+        }
+
+        .modal-wa-title {
+            font-size: 1.15rem;
+            font-weight: 800;
+            margin: 0 0 10px 0;
+            color: #25D366;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .modal-wa-desc {
+            font-size: 0.85rem;
+            color: #CBD5E1;
+            line-height: 1.5;
+            margin-bottom: 16px;
+        }
+
+        .modal-wa-input-group {
+            margin-bottom: 18px;
+        }
+
+        .modal-wa-input-group label {
+            display: block;
+            font-size: 0.8rem;
+            font-weight: 700;
+            margin-bottom: 6px;
+            color: #F8FAFC;
+        }
+
+        .modal-wa-input-group input {
+            width: 100%;
+            padding: 10px 12px;
+            border-radius: 8px;
+            background: #431407;
+            border: 1px solid #334155;
+            color: #FFFFFF;
+            font-size: 0.9rem;
+            box-sizing: border-box;
+        }
+
+        .modal-wa-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        /* Estilos de Impresión / PDF */
+        @media print {
+            body.menu-body {
+                background: #FFFFFF !important;
+                color: #000000 !important;
+                padding: 0 !important;
+            }
+
+            .menu-top-toolbar,
+            .modal-wa-prompt {
+                display: none !important;
+            }
+
+            #menu-printable-sheet {
+                border: none !important;
+                box-shadow: none !important;
+                max-width: 100% !important;
+                padding: 10px !important;
+                background: #14171D !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+        }
+    </style>
+</head>
+
+<body class="menu-body">
+
+    <!-- Barra de Control Superior -->
+    <div class="menu-top-toolbar">
+        <div class="menu-toolbar-brand">
+            <img src="img/logo.jpg" alt="Logo El Gustazo" class="menu-toolbar-logo">
+            <div>
+                <h1 class="menu-toolbar-title">Menú Digital Oficial • El Gustazo</h1>
+                <p class="menu-toolbar-subtitle">Sierra Maestra, Managua • 100% sincronizado con tu catálogo en vivo</p>
+            </div>
+        </div>
+        <div class="menu-toolbar-actions">
+            <button type="button" class="btn-menu-action btn-menu-pdf" onclick="descargarMenuPDF('continuo')"
+                title="Descargar Menú Digital Continuo en formato PDF (Sin Cortes)">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                    <line x1="16" y1="13" x2="8" y2="13"></line>
+                    <line x1="16" y1="17" x2="8" y2="17"></line>
+                    <polyline points="10 9 9 9 8 9"></polyline>
+                </svg>
+                Descargar Menú PDF (Sin Cortes)
+            </button>
+            <button type="button" class="btn-menu-action" style="background:#475569; color:#FFFFFF;"
+                onclick="descargarMenuPDF('carta')" title="Descargar en Formato Carta/A4 para imprimir en papel">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <polyline points="6 9 6 2 18 2 18 9"></polyline>
+                    <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+                    <rect x="6" y="14" width="12" height="8"></rect>
+                </svg>
+                PDF Tamaño Carta
+            </button>
+            <button type="button" class="btn-menu-action" style="background: #EA580C; color:#FFFFFF;"
+                onclick="window.print()" title="Imprimir Menú Directamente">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <polyline points="6 9 6 2 18 2 18 9"></polyline>
+                    <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+                    <rect x="6" y="14" width="12" height="8"></rect>
+                </svg>
+                Imprimir Menú
+            </button>
+            <a href="delivery.html" class="btn-menu-action btn-menu-back">
+                Volver a Delivery
+            </a>
+            <a href="pos.html" class="btn-menu-action btn-menu-back">
+                Volver a Menú y Facturación
+            </a>
+        </div>
+    </div>
+
+    <!-- Hoja Principal del Menú (Sincronizada con la Base de Datos) -->
+    <div id="menu-printable-sheet">
+
+        <!-- Encabezado con Logotipo Original y Bienvenida -->
+        <div class="menu-main-header">
+            <div class="menu-main-logo-wrap">
+                <img src="img/logo.jpg" alt="Logo Oficial El Gustazo" class="menu-main-logo">
+            </div>
+            <h2 class="menu-hero-title">¡Bienvenido a El Gustazo!</h2>
+            <p class="menu-hero-subtitle">Sabor Artesanal Único a la Parrilla • Recetas Exclusivas</p>
+            <div class="menu-hero-address">
+                <span>Sierra Maestra, Managua</span>
+                <span>Pedidos & Delivery</span>
+                <span>Atención Rápida y Calidad Garantizada</span>
+            </div>
+        </div>
+
+        <!-- Contenedor Dinámico de 3 Columnas (Se rellena desde /api/categorias y /api/productos) -->
+        <div class="menu-columns-grid" id="menu-dynamic-columns">
+            <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: #94A3B8;">
+                Cargando platillos y combos del catálogo...
+            </div>
+        </div>
+
+        <!-- Pie de Página -->
+        <div class="menu-footer-notes">
+            <p style="margin:0 0 5px 0; font-weight:700; color:#E2E8F0;">
+                Precios expresados en Córdobas (C$) • Servicio de Delivery para Sierra Maestra y zonas aledañas
+            </p>
+            <p style="margin:0; font-size:0.75rem; color:#94A3B8;">
+                ¡Gracias por elegir El Gustazo! Pregunte por nuestras promociones del día al ordenar.
+            </p>
+            <div class="menu-footer-phone">
+                Haz tu pedido aquí: Pedidos en Local & Llamadas
+            </div>
+        </div>
+
+    </div>
+
+
+
+    <!-- Scripts -->
+    <script src="js/html2pdf.bundle.min.js"></script>
+    <script>
+        let catalogoCategorias = [];
+        let catalogoProductos = [];
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            await cargarMenuDinamico();
+        });
+
+        // Carga 100% en vivo desde la base de datos SQLite
+        async function cargarMenuDinamico() {
+            try {
+                const [resCats, resProds] = await Promise.all([
+                    fetch('/api/categorias'),
+                    fetch('/api/productos')
+                ]);
+                catalogoCategorias = await resCats.json();
+                catalogoProductos = await resProds.json();
+
+                renderizarMenuDinamico(catalogoCategorias, catalogoProductos);
+            } catch (err) {
+                console.error('Error cargando menú dinámico:', err);
+                document.getElementById('menu-dynamic-columns').innerHTML = `
+                    <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: #EF4444;">
+                        Error al cargar el menú en vivo. Verifique la conexión con el servidor.
+                    </div>
+                `;
+            }
+        }
+
+        // Renderizado organizado en 3 columnas tal como en el menú físico
+        function renderizarMenuDinamico(categorias, productos) {
+            const container = document.getElementById('menu-dynamic-columns');
+            if (!container) return;
+            container.innerHTML = '';
+
+            // Definición de las 3 columnas
+            const col1 = document.createElement('div');
+            col1.className = 'menu-col';
+
+            const col2 = document.createElement('div');
+            col2.className = 'menu-col';
+
+            const col3 = document.createElement('div');
+            col3.className = 'menu-col';
+
+            // Agrupación de categorías por afinidad visual del menú físico
+            // Columna 1: Hamburguesas (1) y Combos (2)
+            // Columna 2: Combos Especiales (3), Hot Dog (4), Burritos/Quesadillas (5), Papas (6), Pollo (7)
+            // Columna 3: Snaks (8), Extras (9), Alitas (10), Bebidas (11)
+            // Cualquier categoría adicional en el futuro se asignará inteligentemente a la columna con menos bloques
+            categorias.forEach(cat => {
+                const prodsDeCat = productos.filter(p => p.id_categoria === cat.id_categoria && p.estado === 1);
+                if (prodsDeCat.length === 0) return; // No mostrar categoría vacía
+
+                const catBlock = document.createElement('div');
+                catBlock.className = 'menu-category-block';
+
+                // Clases de estilo según tipo de categoría
+                let headerClass = 'menu-cat-header';
+                if (cat.id_categoria === 3 || cat.id_categoria === 10) {
+                    headerClass += ' header-special'; // Especial para combos grandes y alitas
+                } else if (cat.id_categoria === 4 || cat.id_categoria === 6 || cat.id_categoria === 8 || cat.id_categoria === 11) {
+                    headerClass += ' header-alt'; // Tono ámbar/dorado
+                }
+
+                let itemsHtml = '';
+                prodsDeCat.forEach(p => {
+                    itemsHtml += `
+                        <div class="menu-item-row">
+                            <div class="menu-item-info">
+                                <div class="menu-item-name ${p.es_combo ? 'is-combo' : ''}">${p.nombre}</div>
+                                ${p.descripcion ? `<div class="menu-item-desc">${p.descripcion}</div>` : ''}
+                            </div>
+                            <div class="menu-item-price">C$ ${parseFloat(p.precio).toFixed(2)}</div>
+                        </div>
+                    `;
+                });
+
+                catBlock.innerHTML = `
+                    <div class="${headerClass}">
+                        <span class="menu-cat-title-with-lines">${cat.nombre.toUpperCase()}</span>
+                    </div>
+                    <div class="menu-items-list">
+                        ${itemsHtml}
+                    </div>
+                `;
+
+                // Asignar a columna correspondiente
+                if (cat.id_categoria === 1 || cat.id_categoria === 2) {
+                    col1.appendChild(catBlock);
+                } else if ([3, 4, 5, 6, 7].includes(cat.id_categoria)) {
+                    col2.appendChild(catBlock);
+                } else if ([8, 9, 10, 11].includes(cat.id_categoria)) {
+                    col3.appendChild(catBlock);
+                } else {
+                    // Nuevas categorías futuras: balancear en la columna con menos hijos
+                    const counts = [col1.children.length, col2.children.length, col3.children.length];
+                    const minIdx = counts.indexOf(Math.min(...counts));
+                    if (minIdx === 0) col1.appendChild(catBlock);
+                    else if (minIdx === 1) col2.appendChild(catBlock);
+                    else col3.appendChild(catBlock);
+                }
+            });
+
+            container.appendChild(col1);
+            container.appendChild(col2);
+            container.appendChild(col3);
+        }
+
+        // Configuración dinámica del PDF (Continuo sin cortes para WhatsApp/Móvil o Carta para impresión)
+        function obtenerConfiguracionPDF(elemento, formato = 'continuo') {
+            if (formato === 'continuo') {
+                const rect = elemento.getBoundingClientRect();
+                // 1 px = 25.4 / 96 mm = 0.264583 mm
+                const widthMm = Math.ceil(rect.width * 0.264583);
+                const heightMm = Math.ceil(rect.height * 0.264583) + 6;
+                return {
+                    margin: [0, 0, 0, 0],
+                    filename: 'Menu_Oficial_El_Gustazo.pdf',
+                    image: { type: 'jpeg', quality: 0.98 },
+                    html2canvas: {
+                        scale: 2,
+                        useCORS: true,
+                        backgroundColor: '#14171D',
+                        scrollX: 0,
+                        scrollY: 0,
+                        windowWidth: 1200
+                    },
+                    jsPDF: {
+                        unit: 'mm',
+                        format: [widthMm, heightMm],
+                        orientation: 'portrait'
+                    }
+                };
+            } else {
+                return {
+                    margin: [8, 8, 8, 8],
+                    filename: 'Menu_Oficial_El_Gustazo_Carta.pdf',
+                    image: { type: 'jpeg', quality: 0.98 },
+                    html2canvas: {
+                        scale: 2,
+                        useCORS: true,
+                        backgroundColor: '#14171D',
+                        scrollX: 0,
+                        scrollY: 0,
+                        windowWidth: 1200
+                    },
+                    pagebreak: {
+                        mode: ['avoid-all', 'css', 'legacy'],
+                        avoid: ['.menu-category-block', '.menu-item-row', '.menu-main-header', '.menu-footer-notes']
+                    },
+                    jsPDF: {
+                        unit: 'mm',
+                        format: 'letter',
+                        orientation: 'portrait'
+                    }
+                };
+            }
+        }
+
+        // Descarga de PDF con html2pdf.js
+        function descargarMenuPDF(formato = 'continuo') {
+            return new Promise((resolve, reject) => {
+                const elemento = document.getElementById('menu-printable-sheet');
+                if (!elemento) return reject('No element');
+
+                const opt = obtenerConfiguracionPDF(elemento, formato);
+                const btn = document.querySelector('.btn-menu-pdf');
+                const originalText = btn ? btn.innerHTML : '';
+                if (btn) btn.innerHTML = 'Generando PDF...';
+
+                html2pdf().set(opt).from(elemento).save().then(() => {
+                    if (btn) btn.innerHTML = originalText;
+                    resolve(true);
+                }).catch(err => {
+                    console.error('Error al generar PDF:', err);
+                    if (btn) btn.innerHTML = originalText;
+                    reject(err);
+                });
+            });
+        }
+
+
+    </script>
+</body>
+
+</html>

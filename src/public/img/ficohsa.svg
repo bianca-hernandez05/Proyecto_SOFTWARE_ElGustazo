@@ -1,7 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 60" width="200" height="60">
-  <rect width="200" height="60" rx="6" fill="#0A2540"/>
-  <circle cx="30" cy="30" r="16" fill="#00A3E0"/>
-  <circle cx="30" cy="30" r="9" fill="#0A2540"/>
-  <polygon points="30,14 36,30 30,30" fill="#ffffff"/>
-  <text x="56" y="39" font-family="Arial, Helvetica, sans-serif" font-size="24" font-weight="800" fill="#ffffff" letter-spacing="1">Ficohsa</text>
-</svg>

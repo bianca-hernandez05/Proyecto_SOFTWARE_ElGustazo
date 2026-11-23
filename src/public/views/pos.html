@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Menú y Facturación - El Gustazo</title>
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    <link rel="stylesheet" href="css/style.css?v=3.6">
+</head>
+
+<body>
+    <!-- Encabezado Institucional -->
+    <header class="main-header">
+        <a href="pos.html" class="logo-area">
+            <img src="img/logo.jpg" alt="Logo El Gustazo" class="brand-logo-img">
+            <div class="logo-title-wrap">
+                <h1>EL GUSTAZO</h1>
+                <p>Sierra Maestra, Managua</p>
+            </div>
+        </a>
+
+        <nav class="nav-menu">
+            <a href="pos.html" class="nav-link active">Menú y Facturación</a>
+            <a href="delivery.html" class="nav-link" id="nav-delivery-link">Delivery <span id="badge-nav-delivery"
+                    class="badge-count-pill" style="display:none;">0</span></a>
+            <a href="inventario.html" class="nav-link">Inventario</a>
+            <a href="clientes.html" class="nav-link">Clientes</a>
+            <a href="caja.html" class="nav-link">Caja Chica</a>
+            <a href="admin.html" class="nav-link admin-only">Administración</a>
+        </nav>
+
+        <div class="user-status">
+            <button id="btn-header-alert" class="header-alert-btn">Insumos Críticos</button>
+            <span id="pos-shift-badge" class="status-badge warning" style="display:none;">Verificando Turno...</span>
+            <div class="user-badge">
+                <span id="header-user-name">Cajero</span>
+                <span id="header-user-role" class="role-pill">Cajero</span>
+            </div>
+            <button onclick="cerrarSesion()" class="btn-logout">Salir</button>
+        </div>
+    </header>
+
+    <!-- Contenedor Principal Menú y Facturación -->
+    <main class="dashboard-container">
+        <!-- Panel Izquierdo: Catálogo y Selección de Platillos y Combos -->
+        <section class="catalog-section">
+            <div class="panel-header" style="display: flex; justify-content: space-between; align-items: center;">
+                <div style="display: flex; align-items: baseline; gap: 10px;">
+                    <h2>Menú de Platillos y Combos</h2>
+                    <span id="txt-contador-platillos" style="font-size: 0.82rem; color: #64748B; font-weight: 600;"></span>
+                </div>
+                <div style="display:flex; gap:8px; align-items:center;">
+                    <a href="menu.html" target="_blank" class="btn-small" style="background:#EA580C; font-weight:700; text-decoration:none; display:inline-flex; align-items:center; gap:5px; padding: 6px 12px; font-size: 0.85rem;" title="Ver y descargar Menú Digital Oficial">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                        Menú Digital (PDF)
+                    </a>
+                    <button id="btn-admin-nuevo-platillo" class="btn-charge admin-only" style="display: none; padding: 6px 14px; font-size: 0.85rem; background:#16A34A; color:#FFF; font-weight:700;" onclick="abrirModalPlatilloPOS()">
+                        + Nuevo Platillo / Combo
+                    </button>
+                </div>
+            </div>
+
+            <div class="catalog-toolbar">
+                <div class="search-input-wrap">
+                    <span class="search-icon">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                        </svg>
+                    </span>
+                    <input type="text" id="txt-buscar-producto" placeholder="Buscar platillo por nombre..."
+                        oninput="buscarPlatilloEnVivo()">
+                    <button type="button" id="btn-limpiar-busqueda" onclick="limpiarBusquedaPlatillo()" style="display:none; background:none; border:none; color:#94A3B8; font-size:1.2rem; cursor:pointer; padding:0 8px; line-height:1;" title="Limpiar búsqueda">&times;</button>
+                </div>
+
+                <div class="categories-bar">
+                    <button class="cat-btn active" data-cat="todos" onclick="filtrarPorCategoria('todos', this)">Todos</button>
+                    <button class="cat-btn" data-cat="1" onclick="filtrarPorCategoria('1', this)">Hamburguesas</button>
+                    <button class="cat-btn" data-cat="2" onclick="filtrarPorCategoria('2', this)">Combos</button>
+                    <button class="cat-btn" data-cat="3" onclick="filtrarPorCategoria('3', this)">Combos Especiales</button>
+                    <button class="cat-btn" data-cat="4" onclick="filtrarPorCategoria('4', this)">Hot Dog</button>
+                    <button class="cat-btn" data-cat="5" onclick="filtrarPorCategoria('5', this)">Burritos / Quesadillas</button>
+                    <button class="cat-btn" data-cat="6" onclick="filtrarPorCategoria('6', this)">Papas</button>
+                    <button class="cat-btn" data-cat="7" onclick="filtrarPorCategoria('7', this)">Pollo a la Plancha</button>
+                    <button class="cat-btn" data-cat="8" onclick="filtrarPorCategoria('8', this)">Snaks</button>
+                    <button class="cat-btn" data-cat="9" onclick="filtrarPorCategoria('9', this)">Extras</button>
+                    <button class="cat-btn" data-cat="10" onclick="filtrarPorCategoria('10', this)">Alitas</button>
+                    <button class="cat-btn" data-cat="11" onclick="filtrarPorCategoria('11', this)">Bebidas</button>
+                </div>
+            </div>
+
+            <div class="product-grid-wrap">
+                <!-- Banner Corporativo de Promociones Activas -->
+                <div id="banner-promociones-pos" class="promociones-pos-banner" style="display:none;"></div>
+                <div id="grid-productos" class="product-grid">
+                    <!-- Cargado dinámicamente por app.js -->
+                </div>
+            </div>
+        </section>
+
+        <!-- Panel Derecho: Comanda, Tipo de Orden, Totales y Facturación -->
+        <section class="billing-section">
+            <div class="panel-header">
+                <h2>Comanda Actual</h2>
+                <button class="btn-small" onclick="vaciarCarrito()" style="background:#DC2626;"
+                    title="Limpiar comanda">Limpiar</button>
+            </div>
+
+            <!-- Barra de Control Unificada: Modalidad de Servicio (Local, Llevar y WhatsApp exclusivo Admin/Gerente) y Cliente -->
+            <div class="comanda-control-bar">
+                <div class="order-type-group">
+                    <button type="button" class="type-btn active" id="btn-tipo-local"
+                        onclick="cambiarTipoServicio('LOCAL', this)">Local</button>
+                    <button type="button" class="type-btn" id="btn-tipo-llevar"
+                        onclick="cambiarTipoServicio('LLEVAR', this)">Llevar</button>
+                    <button type="button" class="type-btn admin-only" id="btn-tipo-delivery"
+                        onclick="if(window.WhatsAppService) WhatsAppService.abrirModalRecepcionWhatsApp(); else cambiarTipoServicio('DELIVERY', this);"
+                        title="Capturar pedido por WhatsApp (Exclusivo Administrador y Gerente General)">WhatsApp</button>
+                </div>
+                <div class="customer-select-inline">
+                    <select id="select-cliente-pos" onchange="alSeleccionarClientePOS()"
+                        title="Seleccionar Cliente Registrado">
+                        <option value="1">Consumidor Final (0000-0000)</option>
+                    </select>
+                    <button type="button" class="btn-new-client-pill" onclick="abrirModalNuevoCliente()"
+                        title="Nuevo Cliente">+ Cliente</button>
+                </div>
+            </div>
+
+            <!-- Cinta compacta cuando la comanda proviene de un pedido de WhatsApp (Retiro en Local / Local / Delivery) -->
+            <div id="badge-origen-whatsapp-pos" style="display:none; margin: 6px 14px 0 14px; padding: 7px 12px; background: #ECFDF5; border: 1px solid #86EFAC; border-radius: 8px; font-size: 0.78rem; color: #166534; font-weight: 700; align-items: center; justify-content: space-between; gap: 8px;">
+                <span id="lbl-origen-whatsapp-pos">Pedido recibido por WhatsApp</span>
+                <button type="button" onclick="if(window.WhatsAppService) WhatsAppService.abrirModalRecepcionWhatsApp()" style="background:#16A34A; color:#FFFFFF; border:none; border-radius:5px; padding:3px 8px; font-size:0.72rem; font-weight:700; cursor:pointer;">Editar Pedido WA</button>
+            </div>
+
+            <!-- Panel Compacto de Envío a Domicilio (Solo visible cuando un pedido de WhatsApp es con Envío Delivery) -->
+            <div id="box-pos-delivery" class="pos-delivery-box" style="display: none; padding: 8px 12px; margin: 6px 14px;">
+                <div class="form-row-compact" style="gap:8px; align-items:center;">
+                    <div style="width:95px;">
+                        <label style="font-size:0.7rem; font-weight:700; color:#7C2D12;">Envío (C$):</label>
+                        <input type="number" id="txt-pos-costo-delivery" value="30" min="0" step="5"
+                            oninput="actualizarCarritoUI()" style="padding:4px 6px; font-size:0.8rem;">
+                    </div>
+                    <div style="flex:1;">
+                        <label style="font-size:0.7rem; font-weight:700; color:#7C2D12;">Repartidor:</label>
+                        <select id="select-pos-repartidor" style="padding:4px 6px; font-size:0.8rem;">
+                            <option value="">Por asignar</option>
+                        </select>
+                    </div>
+                </div>
+                <div style="margin-top:4px; display:flex; gap:6px; align-items:center;">
+                    <input type="text" id="txt-pos-direccion-delivery"
+                        placeholder="Dirección de entrega..."
+                        style="padding:4px 8px; font-size:0.8rem; flex:1;">
+                    <button type="button" onclick="enviarComandaADeliveryContraEntrega()" class="btn-small"
+                        style="background:#D97706; color:#FFFFFF; padding:5px 10px; font-size:0.74rem; white-space:nowrap;"
+                        title="Enviar al tablero de Delivery para pago contra entrega">
+                        Enviar a Tablero Delivery
+                    </button>
+                </div>
+            </div>
+
+            <!-- Lista de Ítems en Comanda con Espacio Amplio y Alta Legibilidad -->
+            <div class="cart-list-wrap">
+                <table class="cart-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 50%;">Platillo / Combo</th>
+                            <th style="width: 25%; text-align: center;">Cant</th>
+                            <th style="width: 19%; text-align: right;">Importe</th>
+                            <th style="width: 6%;"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="cart-items-body">
+                        <!-- Ítems del carrito renderizados aquí dinámicamente -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Totales, Pagos y Cobro -->
+            <div class="billing-footer">
+                <div class="totals-summary">
+                    <div class="row">
+                        <span>Subtotal:</span>
+                        <strong id="val-subtotal">C$ 0.00</strong>
+                    </div>
+                    <div class="row" id="row-descuento-promo" style="display:flex; justify-content:space-between; align-items:center; background:#FEF3C7; padding:6px 10px; border-radius:6px; margin:4px 0; border:1px dashed #F59E0B;">
+                        <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+                            <span style="font-weight:700; color:#92400E; font-size:0.82rem;">Promo / Descuento:</span>
+                            <button type="button" class="btn-small" onclick="abrirModalAplicarPromo()" style="padding:2px 8px; font-size:0.75rem; background:#D97706; font-weight:700;" title="Aplicar descuento o promoción">+ Aplicar</button>
+                            <button type="button" id="btn-quitar-descuento" onclick="removerDescuentoAplicado()" style="display:none; background:none; border:none; color:#DC2626; font-size:0.8rem; cursor:pointer; font-weight:700; padding:0 4px;" title="Quitar promoción">&times; Quitar</button>
+                        </div>
+                        <strong id="val-descuento" style="color:#B45309; font-size:0.9rem;">- C$ 0.00</strong>
+                    </div>
+                    <div id="badge-promo-activa" style="display:none; font-size:0.75rem; color:#065F46; background:#D1FAE5; padding:3px 8px; border-radius:4px; font-weight:600; margin-bottom:4px;">
+                        <span>Aplicada: </span><strong id="txt-promo-activa-nombre"></strong>
+                    </div>
+                    <div class="row" id="row-envio-delivery" style="display:none;">
+                        <span>Costo de Envío:</span>
+                        <strong id="val-envio">C$ 0.00</strong>
+                    </div>
+                    <div class="row total-row">
+                        <span>TOTAL A PAGAR:</span>
+                        <strong id="val-total">C$ 0.00</strong>
+                    </div>
+                </div>
+
+                <!-- Modalidad de Pago -->
+                <div class="payment-toggle-group">
+                    <button type="button" id="btn-metodo-efectivo" class="pay-toggle-btn active"
+                        onclick="seleccionarMetodoPago(1)">
+                        Efectivo
+                    </button>
+                    <button type="button" id="btn-metodo-transferencia" class="pay-toggle-btn"
+                        onclick="seleccionarMetodoPago(2)">
+                        Transferencia Bancaria
+                    </button>
+                </div>
+
+                <!-- Pago en Efectivo Ultra-Compacto en 1 Sola Fila para Maximizar Espacio de Comanda -->
+                <div id="box-pago-efectivo" class="cash-details-box">
+                    <div class="input-row">
+                        <label for="txt-monto-recibido">Recibido (C$):</label>
+                        <input type="number" id="txt-monto-recibido" placeholder="0.00" step="1"
+                            oninput="calcularVueltoEnVivo()">
+                        <button type="button" class="btn-quick-cash exacto" onclick="establecerMontoRecibidoRapido('EXACTO')" title="Rellenar monto exacto">Exacto</button>
+                    </div>
+                    <div class="change-display" id="box-vuelto-display">
+                        <span>Vuelto:</span>
+                        <strong id="val-vuelto">C$ 0.00</strong>
+                    </div>
+                </div>
+
+                <!-- Pago por Transferencia con Logos Oficiales de Bancos -->
+                <div id="box-pago-transferencia" class="transfer-details-box" style="display:none;">
+                    <label style="font-size:0.75rem; font-weight:700; color:#475569;">Seleccione Banco de
+                        Destino:</label>
+                    <div class="bank-grid">
+                        <div class="bank-card-btn active" onclick="seleccionarBanco('BAC', this)">
+                            <img src="img/bac.png" alt="BAC Credomatic" class="bank-logo-img">
+                            <span class="bank-name">BAC Credomatic</span>
+                        </div>
+                        <div class="bank-card-btn" onclick="seleccionarBanco('Banpro', this)">
+                            <img src="img/banpro.png" alt="Banpro Grupo Promerica" class="bank-logo-img">
+                            <span class="bank-name">Banpro Promerica</span>
+                        </div>
+                        <div class="bank-card-btn" onclick="seleccionarBanco('Lafise', this)">
+                            <img src="img/lafise.png" alt="Banco LAFISE" class="bank-logo-img">
+                            <span class="bank-name">Banco LAFISE</span>
+                        </div>
+                        <div class="bank-card-btn" onclick="seleccionarBanco('BDF', this)">
+                            <img src="img/bdf.png" alt="Banco BDF" class="bank-logo-img">
+                            <span class="bank-name">Banco BDF</span>
+                        </div>
+                        <div class="bank-card-btn" onclick="seleccionarBanco('Ficohsa', this)">
+                            <img src="img/ficohsa.png" alt="Banco Ficohsa" class="bank-logo-img">
+                            <span class="bank-name">Banco Ficohsa</span>
+                        </div>
+                    </div>
+
+                    <div class="ref-input-wrap">
+                        <label for="txt-referencia-transferencia">Código de Confirmación / Referencia (*):</label>
+                        <input type="text" id="txt-referencia-transferencia" placeholder="Ej: TRF-982341">
+                    </div>
+                </div>
+
+                <button type="button" class="btn-charge" onclick="procesarFacturacion()">
+                    Procesar Venta y Generar Factura
+                </button>
+            </div>
+        </section>
+    </main>
+
+    <!-- Modal 1: Apertura Obligatoria de Caja Chica -->
+    <div id="modal-apertura-caja" class="modal-backdrop">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h3>Apertura de Caja Chica Requerida</h3>
+            </div>
+            <form onsubmit="procesarAperturaCajaDesdePOS(event)">
+                <div class="modal-body">
+                    <p style="font-size: 0.9rem; color: #475569;">
+                        Para iniciar las ventas del turno debe registrar el <strong>monto o fondo inicial en
+                            efectivo</strong> asignado a la caja física.
+                    </p>
+                    <div class="form-group">
+                        <label for="txt-fondo-inicial">Fondo Inicial en Efectivo (C$):</label>
+                        <input type="number" id="txt-fondo-inicial" required placeholder="Ej: 1000.00" min="0" step="10"
+                            autofocus>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn-charge" style="padding: 10px 20px;">
+                        Abrir Turno de Facturación
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal 2: Factura Comercial Formal y Ticket ESC/POS -->
+    <div id="modal-comprobante-exito" class="modal-backdrop">
+        <div class="modal-box" style="max-width: 650px;">
+            <div class="modal-header">
+                <h3>Factura Oficial y Comprobante</h3>
+                <button type="button" class="modal-close-btn" onclick="cerrarModalComprobante()">&times;</button>
+            </div>
+
+            <div class="comprobante-tabs-bar">
+                <button type="button" id="tab-btn-factura" class="btn-comprobante-tab active"
+                    onclick="cambiarVistaComprobante('factura')">Factura Comercial (PDF / Impresión)</button>
+                <button type="button" id="tab-btn-ticket" class="btn-comprobante-tab"
+                    onclick="cambiarVistaComprobante('ticket')">Ticket Térmico (Impresora)</button>
+            </div>
+
+            <div class="modal-body" style="max-height: 70vh; overflow-y: auto;">
+                <!-- Vista 1: Factura Comercial con Logo Institucional -->
+                <div id="vista-factura-comercial" class="factura-comercial-sheet">
+                    <div class="factura-header">
+                        <div class="factura-logo-wrap">
+                            <img src="img/logo.jpg" alt="El Gustazo" class="factura-logo-img">
+                            <div>
+                                <h3 class="factura-empresa-titulo">EL BUEN GUSTO - EL GUSTAZO</h3>
+                                <p class="factura-empresa-sub">A tu Paladar - Sierra Maestra, Managua</p>
+                                <p class="factura-empresa-sub">Teléfono: (505) 8899-7711 / 8765-4321</p>
+                            </div>
+                        </div>
+                        <div class="factura-fiscal-box">
+                            <span class="factura-badge">FACTURA COMERCIAL</span>
+                            <div class="factura-num" id="fac-numero">FAC-000000</div>
+                            <div class="factura-fecha" id="fac-fecha">18/09/2026, 16:30</div>
+                        </div>
+                    </div>
+
+                    <div class="factura-cliente-grid">
+                        <div>
+                            <span class="fac-label">CLIENTE:</span>
+                            <strong id="fac-cliente-nombre">Consumidor Final</strong>
+                        </div>
+                        <div>
+                            <span class="fac-label">TELÉFONO:</span>
+                            <span id="fac-cliente-telefono">--</span>
+                        </div>
+                        <div>
+                            <span class="fac-label">MODO:</span>
+                            <span id="fac-tipo-entrega">En Local</span>
+                        </div>
+                        <div>
+                            <span class="fac-label">DIRECCIÓN:</span>
+                            <span id="fac-direccion">Sierra Maestra, Managua</span>
+                        </div>
+                    </div>
+
+                    <table class="factura-table">
+                        <thead>
+                            <tr>
+                                <th>Cant</th>
+                                <th>Descripción</th>
+                                <th style="text-align:right;">P. Unit</th>
+                                <th style="text-align:right;">Subtotal</th>
+                            </tr>
+                        </thead>
+                        <tbody id="fac-items-body">
+                            <!-- Ítems renderizados dinámicamente -->
+                        </tbody>
+                    </table>
+
+                    <div class="factura-resumen-grid" style="display: flex; justify-content: flex-end;">
+                        <div class="factura-totales-col" style="width: 100%; max-width: 340px;">
+                            <div class="fac-total-row"><span>Subtotal:</span><strong id="fac-subtotal">C$ 0.00</strong>
+                            </div>
+                            <div class="fac-total-row" id="fac-row-descuento" style="display:none; color:#B45309;">
+                                <span>Descuento / Promo:</span><strong id="fac-descuento">- C$ 0.00</strong>
+                            </div>
+                            <div class="fac-total-row" id="fac-row-delivery" style="display:none;"><span>Envío
+                                    Delivery:</span><strong id="fac-delivery">C$ 0.00</strong></div>
+                            <div class="fac-total-row" style="display:none;"><span>IVA:</span><strong id="fac-iva">C$
+                                    0.00</strong></div>
+                            <div class="fac-total-row fac-grand-total"><span>TOTAL A COBRAR:</span><strong
+                                    id="fac-total">C$ 0.00</strong></div>
+                            <div class="fac-pago-info" id="fac-metodo-info">Pago: Efectivo</div>
+                        </div>
+                    </div>
+
+                    <div class="factura-footer-msg">
+                        <p>¡Muchas gracias por su preferencia! Vuelva pronto a disfrutar de lo bueno.</p>
+                        <small>Comprobante generado por Sistema El Gustazo - 100% Offline</small>
+                    </div>
+                </div>
+
+                <!-- Vista 2: Ticket Térmico Portátil ESC/POS -->
+                <div id="vista-ticket-termico" style="display:none;">
+                    <div id="preview-ticket-escpos" class="thermal-ticket-preview"></div>
+                </div>
+            </div>
+
+            <div class="modal-footer" style="flex-wrap: wrap; justify-content: space-between; gap:8px;">
+                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                    <button type="button" class="btn-thermal" style="padding:8px 16px; font-size: 0.92rem; font-weight: 800; display: inline-flex; align-items: center; gap: 6px;"
+                        onclick="imprimirTicketTermico()" title="Imprimir ticket directamente en la impresora térmica de caja">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+                        Imprimir Ticket Térmico
+                    </button>
+                    <button type="button" class="btn-charge" style="padding:8px 14px; background:#EA580C; font-weight:700;" onclick="imprimirFacturaPDF()" title="Imprimir hoja completa o guardar PDF de la factura">
+                        Imprimir / Guardar Factura
+                    </button>
+                    <button type="button" class="btn-small" style="background:#25D366; color:#FFFFFF; font-weight:800; display:inline-flex; align-items:center; gap:6px; padding:8px 14px;"
+                        onclick="compartirFacturaPorWhatsApp()" title="Enviar comprobante detallado directamente al WhatsApp del cliente">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.816 9.816 0 0 0 12.04 2zM12.04 20.35c-1.48 0-2.93-.4-4.2-1.15l-.3-.18-3.12.82.83-3.04-.2-.31a8.217 8.217 0 0 1-1.26-4.38c0-4.54 3.7-8.24 8.24-8.24 2.2 0 4.27.86 5.82 2.42a8.18 8.18 0 0 1 2.41 5.83c.02 4.54-3.67 8.23-8.22 8.23zm4.52-6.16c-.25-.12-1.47-.72-1.69-.81-.23-.08-.39-.12-.56.12-.17.25-.64.81-.79.97-.14.17-.29.19-.54.07-.25-.12-1.05-.39-1.99-1.23-.74-.66-1.23-1.47-1.38-1.72-.14-.25-.02-.38.11-.5.11-.11.25-.29.37-.43.12-.14.17-.25.25-.41.08-.17.04-.31-.02-.43s-.56-1.34-.76-1.84c-.2-.48-.41-.42-.56-.43h-.48c-.17 0-.43.06-.66.31-.22.25-.86.84-.86 2.05s.88 2.38 1 2.54c.12.17 1.73 2.64 4.2 3.7.59.25 1.05.4 1.41.51.59.19 1.13.16 1.56.1.48-.07 1.47-.6 1.68-1.18.21-.58.21-1.07.15-1.18-.07-.12-.22-.19-.47-.31z"/></svg>
+                        Compartir en WhatsApp
+                    </button>
+                </div>
+                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                    <a id="btn-ver-en-delivery" href="delivery.html" target="_blank" class="btn-thermal"
+                        style="display:none; background:#EA580C; color:#FFFFFF; text-decoration:none; padding:8px 14px; font-weight:700;">
+                        Ver en Delivery
+                    </a>
+                    <button type="button" class="btn-small" style="background:#94A3B8;"
+                        onclick="cerrarModalComprobante()">
+                        Cerrar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal 3: Registro Rápido de Nuevo Cliente -->
+    <div id="modal-nuevo-cliente" class="modal-backdrop">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h3>Registrar Nuevo Cliente</h3>
+                <button type="button" class="modal-close-btn" onclick="cerrarModalNuevoCliente()">&times;</button>
+            </div>
+            <form onsubmit="guardarClienteDesdePOS(event)">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="txt-nc-nombre">Nombre Completo (*):</label>
+                        <input type="text" id="txt-nc-nombre" required placeholder="Ej: Roberto Gómez">
+                    </div>
+                    <div class="form-group">
+                        <label for="txt-nc-telefono">Teléfono de Contacto (*):</label>
+                        <input type="text" id="txt-nc-telefono" required placeholder="Ej: 8899-0011">
+                    </div>
+                    <div class="form-group">
+                        <label for="txt-nc-direccion">Dirección en Sierra Maestra o Zona (*):</label>
+                        <input type="text" id="txt-nc-direccion" required
+                            placeholder="Ej: Sierra Maestra, del Parque Infantil 1c abajo">
+                    </div>
+                    <div class="form-group">
+                        <label for="txt-nc-categoria">Categoría:</label>
+                        <select id="txt-nc-categoria">
+                            <option value="Ocasional">Ocasional</option>
+                            <option value="Frecuente">Frecuente</option>
+                            <option value="VIP">VIP</option>
+                            <option value="Corporativo">Corporativo</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-small" style="background:#94A3B8;"
+                        onclick="cerrarModalNuevoCliente()">Cancelar</button>
+                    <button type="submit" class="btn-charge" style="padding: 8px 16px;">Guardar y Seleccionar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal 4: Agregar / Modificar Platillo desde POS (Exclusivo Administrador) -->
+    <div id="modal-platillo-pos" class="modal-backdrop">
+        <div class="modal-box" style="max-width: 520px;">
+            <div class="modal-header">
+                <h3 id="modal-platillo-pos-title">Nuevo Platillo o Combo</h3>
+                <button type="button" class="modal-close-btn" onclick="cerrarModalPlatilloPOS()">&times;</button>
+            </div>
+            <form onsubmit="guardarPlatilloDesdePOS(event)">
+                <input type="hidden" id="txt-pos-prod-id" value="">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="txt-pos-prod-nombre">Nombre del Platillo / Combo (*):</label>
+                        <input type="text" id="txt-pos-prod-nombre" required placeholder="Ej: Hamburguesa Especial BBQ">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group" style="flex:1;">
+                            <label for="select-pos-prod-categoria">Categoría (*):</label>
+                            <select id="select-pos-prod-categoria" required>
+                                <!-- Opciones cargadas dinámicamente -->
+                            </select>
+                        </div>
+                        <div class="form-group" style="flex:1;">
+                            <label for="txt-pos-prod-precio">Precio de Venta (C$) (*):</label>
+                            <input type="number" id="txt-pos-prod-precio" required min="0" step="0.5" placeholder="Ej: 140.00">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="txt-pos-prod-desc">Descripción / Ingredientes visibles:</label>
+                        <textarea id="txt-pos-prod-desc" rows="2" placeholder="Ej: 2 panes, 1 carne jugosa, queso cheddar y salsa especial"></textarea>
+                    </div>
+                    <div style="display:flex; gap:20px; align-items:center; background:#F8FAFC; padding:10px 14px; border-radius:8px; border:1px solid #E2E8F0; margin-top:10px;">
+                        <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-weight:700; font-size:0.85rem; color:#0F172A; margin:0;">
+                            <input type="checkbox" id="chk-pos-prod-combo" style="width:18px; height:18px;">
+                            ¿Es un Combo?
+                        </label>
+                        <label id="wrap-chk-pos-prod-activo" style="display:none; align-items:center; gap:8px; cursor:pointer; font-weight:700; font-size:0.85rem; color:#0F172A; margin:0;">
+                            <input type="checkbox" id="chk-pos-prod-activo" checked style="width:18px; height:18px;">
+                            Platillo Activo
+                        </label>
+                    </div>
+                </div>
+                <div class="modal-footer" style="justify-content:space-between;">
+                    <div>
+                        <button type="button" id="btn-pos-eliminar-prod" class="btn-small" style="display:none; background:#DC2626;" onclick="eliminarPlatilloDesdePOS()">
+                            Eliminar del Menú
+                        </button>
+                    </div>
+                    <div style="display:flex; gap:8px;">
+                        <button type="button" class="btn-small" style="background:#94A3B8;" onclick="cerrarModalPlatilloPOS()">Cancelar</button>
+                        <button type="submit" class="btn-charge" style="padding:8px 18px;">Guardar Platillo</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal 5: Aplicar Promoción, Bono o Descuento -->
+    <div id="modal-aplicar-promo" class="modal-backdrop">
+        <div class="modal-box" style="max-width: 600px;">
+            <div class="modal-header">
+                <h3>Aplicar Promoción o Descuento</h3>
+                <button type="button" class="modal-close-btn" onclick="cerrarModalAplicarPromo()">&times;</button>
+            </div>
+            <div class="modal-body" style="max-height: 70vh; overflow-y: auto;">
+                <p style="color:#64748B; font-size:0.85rem; margin-top:0; margin-bottom:12px;">
+                    Seleccione una promoción activa del catálogo o aplique un descuento manual autorizado.
+                </p>
+
+                <!-- Selector de Tipo de Descuento -->
+                <div style="display:flex; gap:8px; margin-bottom:14px;">
+                    <button type="button" id="tab-btn-promo-catalogo" class="btn-comprobante-tab active" onclick="cambiarModoDescuento('catalogo')" style="flex:1;">
+                        Promociones Activas
+                    </button>
+                    <button type="button" id="tab-btn-promo-manual" class="btn-comprobante-tab" onclick="cambiarModoDescuento('manual')" style="flex:1;">
+                        Descuento Personalizado
+                    </button>
+                </div>
+
+                <!-- Vista 1: Lista de Promociones del Catálogo -->
+                <div id="sec-promo-catalogo">
+                    <div id="lista-promociones-activas" style="display:flex; flex-direction:column; gap:8px;">
+                        <!-- Cargado dinámicamente -->
+                        <div style="text-align:center; padding:20px; color:#94A3B8;">Cargando promociones disponibles...</div>
+                    </div>
+                </div>
+
+                <!-- Vista 2: Descuento Personalizado Manual -->
+                <div id="sec-promo-manual" style="display:none; background:#F8FAFC; border:1px solid #E2E8F0; padding:14px; border-radius:8px;">
+                    <div class="form-row">
+                        <div class="form-group" style="flex:1;">
+                            <label for="select-tipo-desc-manual">Tipo de Descuento:</label>
+                            <select id="select-tipo-desc-manual" onchange="actualizarPlaceholderManual()">
+                                <option value="PORCENTAJE">Porcentaje (%)</option>
+                                <option value="MONTO_FIJO">Monto Fijo (C$)</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="flex:1;">
+                            <label for="txt-valor-desc-manual">Valor a Descontar (*):</label>
+                            <input type="number" id="txt-valor-desc-manual" placeholder="Ej: 10" min="1" step="1">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="txt-motivo-desc-manual">Motivo o Justificación (*):</label>
+                        <input type="text" id="txt-motivo-desc-manual" placeholder="Ej: Cortesía por demora en cocina, Cliente VIP">
+                    </div>
+                    <div style="background:#FEF3C7; border:1px solid #F59E0B; border-radius:6px; padding:8px 12px; margin-top:8px; font-size:0.8rem; color:#92400E;">
+                        [CONTROL DE SEGURIDAD] <strong>Políticas de Seguridad:</strong> Todo descuento mayor al <strong>15%</strong> requiere la clave o PIN de autorización del <strong>Gerente General</strong>.
+                    </div>
+                    <button type="button" class="btn-charge" style="width:100%; margin-top:12px; padding:10px;" onclick="aplicarDescuentoManual()">
+                        Confirmar y Aplicar Descuento
+                    </button>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-small" style="background:#94A3B8;" onclick="cerrarModalAplicarPromo()">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal 6: Autorización Exclusiva de Gerente General -->
+    <div id="modal-autorizar-gerente" class="modal-backdrop">
+        <div class="modal-box" style="max-width: 440px; border-top: 4px solid #EA580C;">
+            <div class="modal-header">
+                <h3 style="color:#EA580C; display:flex; align-items:center; gap:8px;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                    Autorización de Gerente General
+                </h3>
+                <button type="button" class="modal-close-btn" onclick="cerrarModalAutorizarGerente()">&times;</button>
+            </div>
+            <form onsubmit="confirmarAutorizacionGerente(event)">
+                <div class="modal-body">
+                    <p id="txt-autorizar-motivo-accion" style="font-size:0.88rem; color:#92400E; margin-top:0; margin-bottom:12px; font-weight:600; background:#FEF3C7; padding:10px 12px; border-radius:6px; border:1px solid #F59E0B;">
+                        Esta acción requiere autorización del Gerente General.
+                    </p>
+                    <div class="form-group">
+                        <label for="txt-gerente-pin">Contraseña o PIN de Gerente General (*):</label>
+                        <input type="password" id="txt-gerente-pin" required placeholder="Ingrese contraseña o PIN" autocomplete="off" style="font-size:1.1rem; letter-spacing:2px;">
+                    </div>
+                    <div class="form-group">
+                        <label for="txt-gerente-nota">Observación / Justificación (Opcional):</label>
+                        <input type="text" id="txt-gerente-nota" placeholder="Ej: Autorizado por cumpleaños / Demora">
+                    </div>
+                </div>
+                <div class="modal-footer" style="justify-content:space-between;">
+                    <button type="button" class="btn-small" style="background:#94A3B8;" onclick="cerrarModalAutorizarGerente()">Cancelar</button>
+                    <button type="submit" class="btn-charge" style="background:#16A34A; color:#FFF; font-weight:700; padding:8px 18px;">
+                        Validar y Autorizar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="js/rbac_nav.js"></script>
+    <script src="js/whatsapp_service.js"></script>
+    <script src="js/chatbot_bi.js"></script>
+    <script src="js/app.js?v=3.3"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            inicializarPOS();
+        });
+    </script>
+</body>
+
+</html>

@@ -1,41 +1,100 @@
 /**
- * =========================================================
- * EL BUEN GUSTO - EL GUSTAZO POS
+ * =============================================================================
+ * EL BUEN GUSTO - EL GUSTAZO POS & GESTIÓN INTEGRAL
  * Módulo de Gestión de Pedidos a Domicilio (Delivery)
- * Sierra Maestra, Managua
- * =========================================================
+ * Sierra Maestra, Managua - Operación 100% Offline
+ * =============================================================================
+ * 
+ * ¿POR QUÉ EXISTE ESTE ARCHIVO (delivery.js)?
+ * Este archivo gestiona el flujo operativo completo de pedidos para entrega a domicilio
+ * desde que son recibidos (vía WhatsApp o llamada telefónica), pasando por la cocina,
+ * asignación de repartidores motorizados, hasta la entrega y cobro final.
+ * 
+ * RAZONES ARQUITECTÓNICAS Y DE NEGOCIO:
+ * 1. Tablero Kanban Visual en Tiempo Real: Organiza los pedidos en 5 columnas
+ *    (Pendiente, En Preparación, Listo, En Camino, Entregado) para que la cocina
+ *    y el despachador sepan con exactitud el estado de cada comanda.
+ * 2. Auto-refresco Periódico (Polling Local): Se actualiza automáticamente cada
+ *    25 segundos para reflejar pedidos registrados desde el POS o desde otros
+ *    dispositivos conectados a la red local (Wi-Fi del restaurante).
+ * 3. Alerta de Tiempo Inteligente (Sin Estrés): No muestra un cronómetro segundo a
+ *    segundo que estrese a los cocineros, sino un discreto aviso amarillo si un
+ *    pedido supera los 30 minutos desde su recepción para recordarle al personal revisarlo.
+ * 4. Gestión Libre de Repartidores: Permite registrar, editar y reasignar motorizados
+ *    fácilmente entre pedidos sin trabas burocráticas.
+ * 5. Impresión de Tickets Térmicos de Entrega: Genera tickets con dirección clara,
+ *    referencias y desglose financiero para que el motorizado entregue sin perderse
+ *    en los barrios de Managua.
+ * 6. Eliminación de Códigos QR Locales: Se eliminó la generación de códigos QR de red
+ *    local en las facturas de delivery, ya que los clientes en sus casas intentaban
+ *    escanearlos con sus datos móviles (LTE) y no podían acceder a la IP interna (192.168.x.x).
+ * =============================================================================
  */
 
-let pedidosDelivery = [];
-let clientesDelivery = [];
-let productosDelivery = [];
-let repartidoresDelivery = [];
-let itemsNuevoPedido = [];
-let ticketActual = null;
-let pedidoFacturaActual = null;
+// =============================================================================
+// SECCIÓN 1: ESTADO GLOBAL DEL MÓDULO DE DELIVERY
+// =============================================================================
 
-// Inicialización del módulo
+let pedidosDelivery = [];        // Lista de pedidos activos cargados en el tablero Kanban
+let clientesDelivery = [];       // Directorio de clientes registrados con dirección y teléfono
+let productosDelivery = [];      // Catálogo de platillos para agregar a nuevos pedidos
+let repartidoresDelivery = [];   // Plantilla de repartidores/motorizados disponibles
+let itemsNuevoPedido = [];       // Ítems temporales agregados al modal de nuevo pedido
+let ticketActual = null;         // Texto en formato ESC/POS del ticket de cocina seleccionado
+let pedidoFacturaActual = null;  // Objeto del pedido actualmente visualizado en el modal de factura
+
+/**
+ * Evento de arranque al cargar el DOM de delivery.html.
+ * 
+ * ¿POR QUÉ SE PUSO?
+ * Ejecuta la verificación de seguridad, inicializa el encabezado institucional,
+ * descarga en paralelo los catálogos auxiliares y monta el tablero Kanban.
+ * Además, inicia el intervalo de refresco automático cada 25 segundos para sincronizar
+ * con ventas que ingresen desde el mostrador (POS).
+ */
 document.addEventListener('DOMContentLoaded', async () => {
     verificarAutenticacion(false);
     inicializarHeaderComun();
     await cargarDatosAuxiliares();
     await cargarTableroDelivery();
 
-    // Auto-refresco cada 25 segundos
+    // Auto-refresco cada 25 segundos para sincronización en red local
     setInterval(cargarTableroDelivery, 25000);
 });
 
-// Cargar clientes, platillos y repartidores
+
+// =============================================================================
+// SECCIÓN 2: CARGA DE DATOS AUXILIARES Y SELECTS
+// =============================================================================
+
+/**
+ * Carga clientes, platillos y repartidores en paralelo desde el servidor Node.js.
+ * 
+ * ¿POR QUÉ SE PUSO?
+ * Utiliza `Promise.all` para ejecutar las 3 peticiones HTTP simultáneamente,
+ * reduciendo el tiempo de espera del usuario al abrir la pantalla de Delivery.
+ */
+let tiemposEntregaDelivery = []; // Catálogo de tiempos y zonas de entrega
+
+/**
+ * Carga clientes, platillos, repartidores y zonas de entrega en paralelo.
+ * 
+ * ¿POR QUÉ SE PUSO?
+ * Utiliza `Promise.all` para ejecutar las peticiones HTTP simultáneamente,
+ * reduciendo el tiempo de espera del usuario al abrir la pantalla de Delivery.
+ */
 async function cargarDatosAuxiliares() {
     try {
-        const [resCl, resPr, resRep] = await Promise.all([
+        const [resCl, resPr, resRep, resTiempos] = await Promise.all([
             fetch('/api/clientes'),
             fetch('/api/productos'),
-            fetch('/api/delivery/repartidores')
+            fetch('/api/delivery/repartidores'),
+            fetch('/api/delivery/tiempos')
         ]);
         clientesDelivery = await resCl.json();
         productosDelivery = await resPr.json();
         repartidoresDelivery = await resRep.json();
+        tiemposEntregaDelivery = await resTiempos.json();
 
         poblarSelectsAuxiliares();
     } catch (e) {
@@ -43,8 +102,14 @@ async function cargarDatosAuxiliares() {
     }
 }
 
+/**
+ * Rellena los desplegables (<select>) de clientes, platillos, repartidores y zonas.
+ * 
+ * ¿POR QUÉ SE PUSO?
+ * Permite que los formularios modales cuenten con las opciones actualizadas directamente.
+ */
 function poblarSelectsAuxiliares() {
-    // 1. Clientes
+    // 1. Desplegable de Clientes
     const selCl = document.getElementById('select-del-cliente');
     if (selCl) {
         selCl.innerHTML = '<option value="">-- Seleccionar cliente o escribir abajo --</option>';
@@ -56,7 +121,7 @@ function poblarSelectsAuxiliares() {
         });
     }
 
-    // 2. Platillos
+    // 2. Desplegable de Platillos
     const selPr = document.getElementById('select-del-producto');
     if (selPr) {
         selPr.innerHTML = '';
@@ -68,7 +133,7 @@ function poblarSelectsAuxiliares() {
         });
     }
 
-    // 3. Repartidores
+    // 3. Desplegable de Repartidores
     const selRep = document.getElementById('select-del-repartidor');
     if (selRep) {
         selRep.innerHTML = '<option value="">Por asignar al empacar</option>';
@@ -79,9 +144,53 @@ function poblarSelectsAuxiliares() {
             selRep.appendChild(opt);
         });
     }
+
+    // 4. Desplegable de Zonas & Tiempos de Entrega
+    const selZonas = document.getElementById('select-del-zona-tiempo');
+    if (selZonas) {
+        selZonas.innerHTML = '';
+        tiemposEntregaDelivery.filter(z => z.activo !== 0).forEach(z => {
+            const opt = document.createElement('option');
+            opt.value = z.id_tiempo_entrega;
+            opt.innerText = `${z.nombre_zona} (~${z.tiempo_estimado_min} min - C$ ${parseFloat(z.costo_envio).toFixed(2)})`;
+            selZonas.appendChild(opt);
+        });
+        if (tiemposEntregaDelivery.length > 0) {
+            alSeleccionarZonaDelivery();
+        }
+    }
 }
 
-// Cargar y renderizar el tablero Kanban
+/**
+ * Actualiza el tiempo estimado y el costo de delivery al cambiar la zona seleccionada.
+ */
+function alSeleccionarZonaDelivery() {
+    const selZonas = document.getElementById('select-del-zona-tiempo');
+    if (!selZonas) return;
+    const idZona = parseInt(selZonas.value);
+    const zona = tiemposEntregaDelivery.find(z => z.id_tiempo_entrega === idZona);
+    if (zona) {
+        const inpTiempo = document.getElementById('txt-del-tiempo-est');
+        const inpCosto = document.getElementById('txt-del-costo-envio');
+        if (inpTiempo) inpTiempo.value = zona.tiempo_estimado_min;
+        if (inpCosto) {
+            inpCosto.value = zona.costo_envio;
+            calcularTotalesModalDelivery();
+        }
+    }
+}
+
+
+// =============================================================================
+// SECCIÓN 3: TABLERO KANBAN Y MÉTRICAS OPERATIVAS (KPIS)
+// =============================================================================
+
+/**
+ * Consulta la lista de pedidos de delivery y los dibuja en las 5 columnas Kanban.
+ * 
+ * ¿POR QUÉ SE PUSO?
+ * Mantiene la vista sincronizada con el estado real de la cocina y el despacho.
+ */
 async function cargarTableroDelivery() {
     try {
         const res = await fetch('/api/delivery/pedidos');
@@ -93,7 +202,13 @@ async function cargarTableroDelivery() {
     }
 }
 
-// Actualización manual con respuesta visual instantánea
+/**
+ * Botón de actualización manual con feedback visual instantáneo (animación de giro).
+ * 
+ * ¿POR QUÉ SE PUSO?
+ * Aunque existe auto-refresco cada 25s, el cajero o despachador puede querer
+ * forzar la sincronización inmediata al recibir una llamada telefónica urgente.
+ */
 async function actualizarTableroManual() {
     const btn = document.getElementById('btn-actualizar-tablero');
     const icon = document.getElementById('icon-refresh-tablero');
@@ -123,6 +238,15 @@ async function actualizarTableroManual() {
     }
 }
 
+/**
+ * Actualiza los contadores de pedidos en las tarjetas superiores (KPIs) y columnas.
+ * 
+ * ¿POR QUÉ SE PUSO?
+ * Ofrece métricas instantáneas del flujo de trabajo: cuántos pedidos hay pendientes,
+ * en cocina, listos para empacar, en ruta con motorizados y entregados en el turno.
+ * 
+ * @param {Array} pedidos - Lista de pedidos recuperada del backend.
+ */
 function actualizarKpisDelivery(pedidos) {
     const pendientes = pedidos.filter(p => p.estado === 'PENDIENTE').length;
     const preparacion = pedidos.filter(p => p.estado === 'EN_PREPARACION').length;
@@ -142,6 +266,7 @@ function actualizarKpisDelivery(pedidos) {
     document.getElementById('count-col-camino').innerText = camino;
     document.getElementById('count-col-entregado').innerText = entregados;
 
+    // Actualizar badge de la cabecera general con el total de órdenes activas
     const activos = pendientes + preparacion + listos + camino;
     const badgeHeader = document.getElementById('badge-nav-delivery');
     if (badgeHeader) {
@@ -150,7 +275,15 @@ function actualizarKpisDelivery(pedidos) {
     }
 }
 
-// Audio sintetizado para transiciones de estado de delivery
+/**
+ * Síntesis de sonido acústico para transiciones de estado de delivery.
+ * 
+ * ¿POR QUÉ SE PUSO?
+ * Emite un sonido mediante la Web Audio API cuando una orden avanza de etapa o se entrega,
+ * confirmando la acción sin depender de archivos de audio externos (100% offline).
+ * 
+ * @param {string} tipo - 'pop' o 'success'.
+ */
 function reproducirSonidoDelivery(tipo = 'pop') {
     try {
         const AudioCtx = window.AudioContext || window.webkitAudioContext;
@@ -191,9 +324,20 @@ function reproducirSonidoDelivery(tipo = 'pop') {
     }
 }
 
-// Monitoreo de tiempo para pedidos activos (sin cronómetro estresante, solo alerta si supera 30 min)
+/**
+ * Evalúa el tiempo transcurrido desde la creación del pedido.
+ * 
+ * ¿POR QUÉ SE PUSO?
+ * En lugar de un cronómetro parpadeante que cause estrés al personal de cocina,
+ * solo muestra un indicador sutil cuando la orden supera los 30 minutos para
+ * recordar al despachador consultar con cocina o con el motorizado.
+ * 
+ * @param {string} fechaStr - Fecha y hora de creación de la orden.
+ * @param {string} estado - Estado actual de la orden ('PENDIENTE', 'ENTREGADO', etc.).
+ * @returns {Object|null} Objeto con texto y clase CSS, o null si no amerita alerta.
+ */
 function obtenerAlertaTiempo(fechaStr, estado) {
-    // Si ya está entregado o cancelado, NUNCA mostrar alertas de tiempo ni demoras
+    // Si ya fue entregado o cancelado, nunca mostrar alertas de demora
     if (!fechaStr || estado === 'ENTREGADO' || estado === 'CANCELADO') {
         return null;
     }
@@ -206,7 +350,7 @@ function obtenerAlertaTiempo(fechaStr, estado) {
 
         if (isNaN(diffMin)) return null;
 
-        // Solo mostrar alerta si ha pasado más de media hora (30 min) para recordar monitorear
+        // Alerta preventiva si supera los 30 minutos
         if (diffMin > 30) {
             return {
                 texto: `Revisar (+30 min)`,
@@ -215,14 +359,22 @@ function obtenerAlertaTiempo(fechaStr, estado) {
             };
         }
 
-        // Si tiene 30 minutos o menos, no mostrar nada para evitar estrés al personal
         return null;
     } catch (e) {
         return null;
     }
 }
 
-// Barra visual de 5 pasos en el pipeline
+/**
+ * Genera la barra gráfica de 5 pasos en el pipeline de la tarjeta Kanban.
+ * 
+ * ¿POR QUÉ SE PUSO?
+ * Muestra visualmente el progreso de la orden (Pendiente > Cocina > Listo > En Camino > Entregado)
+ * para que cualquier persona del equipo entienda la etapa con un simple vistazo cromático.
+ * 
+ * @param {string} estado - Estado actual del pedido.
+ * @returns {string} Fragmento HTML con las clases CSS correspondientes.
+ */
 function generarPipelineSteps(estado) {
     const pasos = ['PENDIENTE', 'EN_PREPARACION', 'LISTO', 'EN_CAMINO', 'ENTREGADO'];
     const idxActual = pasos.indexOf(estado);
@@ -237,6 +389,17 @@ function generarPipelineSteps(estado) {
     return html;
 }
 
+/**
+ * Renderiza las tarjetas de los pedidos en las 5 columnas del tablero Kanban.
+ * 
+ * ¿POR QUÉ SE PUSO?
+ * Construye cada tarjeta con su número de orden, origen (WhatsApp o Llamada),
+ * cliente, teléfono con enlace para marcar, dirección exacta, motorizado asignado
+ * (con botón para reasignar rápidamente), lista de platillos, totales financieros
+ * y los botones de acción para avanzar el estado o imprimir tickets.
+ * 
+ * @param {Array} pedidos - Lista de pedidos a renderizar.
+ */
 function renderizarTableroKanban(pedidos) {
     const cols = {
         'PENDIENTE': document.getElementById('col-cards-pendiente'),
@@ -246,12 +409,13 @@ function renderizarTableroKanban(pedidos) {
         'ENTREGADO': document.getElementById('col-cards-entregado')
     };
 
+    // Limpiar contenido previo de las columnas
     Object.values(cols).forEach(col => {
         if (col) col.innerHTML = '';
     });
 
     const usuarioActual = typeof obtenerUsuarioActual === 'function' ? obtenerUsuarioActual() : null;
-    const esAdmin = usuarioActual && usuarioActual.id_rol === 1;
+    const esAdmin = usuarioActual && (usuarioActual.id_rol === 1 || usuarioActual.id_rol === 3);
 
     pedidos.forEach(p => {
         const colElem = cols[p.estado];
@@ -265,7 +429,7 @@ function renderizarTableroKanban(pedidos) {
             itemsHtml += `<div>• ${it.cantidad}x ${it.producto_nombre || it.nombre}</div>`;
         });
 
-        // Botón de avance según estado
+        // Botón principal de avance en el flujo operativo
         let botonAvance = '';
         if (p.estado === 'PENDIENTE') {
             botonAvance = `<button class="btn-action-status btn-start-prep" onclick="cambiarEstadoPedido(${p.id_pedido}, 'EN_PREPARACION')">A Cocina (En Prep)</button>`;
@@ -286,20 +450,39 @@ function renderizarTableroKanban(pedidos) {
             `;
         }
 
-        const telLink = p.telefono ? (p.telefono || '').replace(/\D/g, '') : '';
-        const alertaTiempo = obtenerAlertaTiempo(p.fecha_creacion, p.estado);
+        // Cronómetro / Monitoreo del tiempo de entrega con alertas cromáticas
+        let badgeTiempoHtml = '';
+        if (p.estado === 'ENTREGADO') {
+            const minFinal = p.tiempo_total_minutos || '--';
+            badgeTiempoHtml = `
+                <span style="font-size:0.72rem; font-weight:700; color:#15803D; background:#DCFCE7; padding:2px 7px; border-radius:4px; display:inline-flex; align-items:center; gap:4px;">
+                    [ENTREGADO] ${minFinal} min
+                </span>
+            `;
+        } else if (p.fecha_creacion) {
+            const fechaCrea = new Date(p.fecha_creacion.replace(' ', 'T'));
+            const diffMin = Math.max(0, Math.floor((Date.now() - fechaCrea.getTime()) / 60000));
+            const estMin = p.tiempo_estimado_min || 25;
+            let bg = '#DCFCE7', fg = '#15803D', icon = '';
+            if (diffMin > 35) {
+                bg = '#FEE2E2'; fg = '#B91C1C'; icon = ' Demorado:'; // Demorado > 35 min
+            } else if (diffMin >= 20) {
+                bg = '#FEF3C7'; fg = '#B45309'; icon = ''; // 20 - 35 min
+            }
+            badgeTiempoHtml = `
+                <span style="font-size:0.72rem; font-weight:700; color:${fg}; background:${bg}; padding:2px 7px; border-radius:4px; display:inline-flex; align-items:center; gap:4px;" title="Tiempo transcurrido: ${diffMin} min / Tiempo estimado: ${estMin} min">
+                    ${icon} ${diffMin} min / est ${estMin} min
+                </span>
+            `;
+        }
+
         const pipelineHtml = generarPipelineSteps(p.estado);
 
         card.innerHTML = `
             <div class="card-header-row">
-                <div style="display:flex; align-items:center; gap:6px;">
+                <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
                     <strong class="card-pedido-num">#${p.numero_pedido}</strong>
-                    ${alertaTiempo ? `
-                        <span class="card-time-badge ${alertaTiempo.clase}" title="Han pasado más de 30 minutos desde la recepción. Monitorear estado del pedido.">
-                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
-                            ${alertaTiempo.texto}
-                        </span>
-                    ` : ''}
+                    ${badgeTiempoHtml}
                 </div>
                 <span class="card-origen-badge ${p.origen === 'WHATSAPP' ? 'badge-wa' : 'badge-tel'}">
                     ${p.origen === 'WHATSAPP' ? 'WhatsApp' : 'Llamada'}
@@ -309,7 +492,7 @@ function renderizarTableroKanban(pedidos) {
 
             <div class="card-cliente-title">${p.cliente_nombre}</div>
             <div class="card-tel">Tel: <a href="tel:${p.telefono}">${p.telefono || 'Sin teléfono'}</a></div>
-            <div class="card-direccion"><span style="font-weight:700; color:#0284C7;">Dir:</span> ${p.direccion}</div>
+            <div class="card-direccion"><span style="font-weight:700; color:#EA580C;">Dir:</span> ${p.direccion}</div>
             
             <div class="card-repartidor" style="display:flex; justify-content:space-between; align-items:center; background:#F8FAFC; padding:5px 8px; border-radius:6px; margin:5px 0; border:1px solid #E2E8F0;">
                 <div>
@@ -340,11 +523,17 @@ function renderizarTableroKanban(pedidos) {
                 <button type="button" class="card-btn-mini btn-comanda-cocina" onclick="verTicketCocina(${p.id_pedido})" title="Imprimir Comanda de Cocina / Despacho">
                     Comanda Cocina
                 </button>
-                <button type="button" class="card-btn-mini btn-factura-qr" onclick="verFacturaDelivery(${p.id_pedido})" title="Ver Factura con QR">
-                    Factura & QR
+                <button type="button" class="card-btn-mini btn-factura-qr" onclick="verFacturaDelivery(${p.id_pedido})" title="Ver Factura Comercial">
+                    Ver Factura
                 </button>
-                <button type="button" class="card-btn-mini" style="background:#0F172A; color:#FFFFFF; font-weight:700;" onclick="imprimirTicketDeliveryTermico(${p.id_pedido})" title="Imprimir Ticket Térmico para Repartidor">
+                <button type="button" class="card-btn-mini" style="background:#B45309; color:#FFFFFF; font-weight:700;" onclick="imprimirTicketDeliveryTermico(${p.id_pedido})" title="Imprimir Ticket Térmico para Repartidor">
                     Ticket Térmico
+                </button>
+                <button type="button" class="card-btn-mini" style="background:#25D366; color:#FFFFFF; font-weight:700;" onclick="enviarWhatsAppClienteDelivery(${p.id_pedido})" title="Enviar actualización al WhatsApp del cliente">
+                    WA Cliente
+                </button>
+                <button type="button" class="card-btn-mini" style="background:#059669; color:#FFFFFF; font-weight:700;" onclick="enviarWhatsAppRepartidorDelivery(${p.id_pedido})" title="Enviar hoja de ruta al WhatsApp del repartidor">
+                    WA Motorizado
                 </button>
                 ${esAdmin ? `
                     <button type="button" class="card-btn-mini btn-order-delete" onclick="eliminarPedidoDelivery(${p.id_pedido}, '${p.numero_pedido}')" title="Eliminar pedido permanentemente (Solo Administrador)">
@@ -358,7 +547,17 @@ function renderizarTableroKanban(pedidos) {
     });
 }
 
-// Cambiar estado de pedido
+/**
+ * Cambia el estado de un pedido en la base de datos (PATCH /api/delivery/pedidos/:id/estado).
+ * 
+ * ¿POR QUÉ SE PUSO?
+ * Maneja la máquina de estados. Si el nuevo estado es 'ENTREGADO', el backend
+ * auto-vincula la venta en la caja chica activa y descuenta los insumos correspondientes.
+ * 
+ * @param {number} idPedido - ID del pedido.
+ * @param {string} nuevoEstado - Nuevo estado operativo.
+ * @param {string|null} repartidor - Nombre del repartidor asignado (opcional).
+ */
 async function cambiarEstadoPedido(idPedido, nuevoEstado, repartidor = null) {
     try {
         const usuario = obtenerUsuarioActual();
@@ -384,7 +583,11 @@ async function cambiarEstadoPedido(idPedido, nuevoEstado, repartidor = null) {
     }
 }
 
-// Despachar en camino seleccionando repartidor
+/**
+ * Despacha un pedido a la columna "EN CAMINO", solicitando el repartidor si aún no está asignado.
+ * 
+ * @param {number} idPedido - ID del pedido a despachar.
+ */
 function despacharEnCamino(idPedido) {
     const pedido = pedidosDelivery.find(p => p.id_pedido === idPedido);
     let repartidor = pedido ? pedido.repartidor : '';
@@ -405,11 +608,16 @@ function despacharEnCamino(idPedido) {
 }
 
 
+// =============================================================================
+// SECCIÓN 4: CREACIÓN DE NUEVOS PEDIDOS DE DELIVERY DESDE MODAL
+// =============================================================================
 
-// Modal Nuevo Pedido Delivery
+/**
+ * Abre el formulario modal para registrar un pedido de delivery (WhatsApp o Teléfono).
+ */
 function abrirModalNuevoPedidoDelivery() {
     itemsNuevoPedido = [];
-    document.getElementById('txt-del-costo-envio').value = '30';
+    document.getElementById('txt-del-costo-envio').value = '30'; // Tarifa base estándar en Sierra Maestra
     document.getElementById('txt-del-notas').value = '';
     document.getElementById('txt-del-nombre').value = '';
     document.getElementById('txt-del-telefono').value = '';
@@ -419,10 +627,16 @@ function abrirModalNuevoPedidoDelivery() {
     document.getElementById('modal-nuevo-delivery').classList.add('open');
 }
 
+/**
+ * Cierra la ventana modal de nuevo pedido de delivery.
+ */
 function cerrarModalNuevoPedidoDelivery() {
     document.getElementById('modal-nuevo-delivery').classList.remove('open');
 }
 
+/**
+ * Autocompleta los datos del cliente al seleccionarlo en el desplegable.
+ */
 function alCambiarClienteDelivery() {
     const sel = document.getElementById('select-del-cliente');
     const id = sel.value;
@@ -435,6 +649,9 @@ function alCambiarClienteDelivery() {
     }
 }
 
+/**
+ * Alterna la visibilidad de los campos de banco y referencia según la forma de pago.
+ */
 function alCambiarMetodoPagoDelivery() {
     const metodo = parseInt(document.getElementById('select-del-metodo-pago').value);
     const grpBanco = document.getElementById('group-del-banco');
@@ -448,6 +665,9 @@ function alCambiarMetodoPagoDelivery() {
     }
 }
 
+/**
+ * Agrega un platillo a la lista temporal del nuevo pedido de delivery.
+ */
 function agregarItemADelivery() {
     const sel = document.getElementById('select-del-producto');
     const idProd = parseInt(sel.value);
@@ -471,12 +691,20 @@ function agregarItemADelivery() {
     calcularTotalesModalDelivery();
 }
 
+/**
+ * Elimina una línea de producto en el modal de nuevo pedido.
+ * 
+ * @param {number} idx - Índice del elemento en itemsNuevoPedido.
+ */
 function eliminarItemDelivery(idx) {
     itemsNuevoPedido.splice(idx, 1);
     renderizarItemsNuevoPedido();
     calcularTotalesModalDelivery();
 }
 
+/**
+ * Renderiza la tabla de platillos dentro del modal de nuevo pedido.
+ */
 function renderizarItemsNuevoPedido() {
     const tbody = document.getElementById('del-items-body');
     if (!tbody) return;
@@ -503,6 +731,9 @@ function renderizarItemsNuevoPedido() {
     });
 }
 
+/**
+ * Recalcula Subtotal, Costo de Envío y Total en el modal de nuevo pedido.
+ */
 function calcularTotalesModalDelivery() {
     const subtotal = itemsNuevoPedido.reduce((acc, it) => acc + (it.precio * it.cantidad), 0);
     const envio = parseFloat(document.getElementById('txt-del-costo-envio').value) || 0;
@@ -515,6 +746,11 @@ function calcularTotalesModalDelivery() {
     document.getElementById('del-lbl-total').innerText = `C$ ${total.toFixed(2)}`;
 }
 
+/**
+ * Guarda el pedido de delivery en SQLite y lo coloca en estado PENDIENTE en el tablero.
+ * 
+ * @param {Event} e - Evento submit del formulario.
+ */
 async function guardarPedidoDelivery(e) {
     e.preventDefault();
     if (itemsNuevoPedido.length === 0) {
@@ -535,6 +771,9 @@ async function guardarPedidoDelivery(e) {
 
     const selCl = document.getElementById('select-del-cliente');
     const idCliente = selCl.value ? parseInt(selCl.value) : null;
+    const selZona = document.getElementById('select-del-zona-tiempo');
+    const idTiempoEntrega = selZona && selZona.value ? parseInt(selZona.value) : null;
+    const tiempoEstMin = parseInt(document.getElementById('txt-del-tiempo-est').value) || 25;
     const usuario = obtenerUsuarioActual();
 
     const payload = {
@@ -546,6 +785,8 @@ async function guardarPedidoDelivery(e) {
         repartidor: repartidor || null,
         notas,
         costo_delivery: costoEnvio,
+        id_tiempo_entrega: idTiempoEntrega,
+        tiempo_estimado_min: tiempoEstMin,
         items: itemsNuevoPedido,
         id_metodo_pago: idMetodo,
         banco,
@@ -572,7 +813,16 @@ async function guardarPedidoDelivery(e) {
     }
 }
 
-// Vista de Ticket de Cocina y Despacho
+
+// =============================================================================
+// SECCIÓN 5: TICKETS DE COCINA Y FACTURA COMERCIAL FORMAL (SIN QR LOCAL)
+// =============================================================================
+
+/**
+ * Consulta y muestra la comanda de cocina / ticket de preparación de un pedido.
+ * 
+ * @param {number} idPedido - ID del pedido.
+ */
 async function verTicketCocina(idPedido) {
     try {
         const res = await fetch(`/api/delivery/pedidos/${idPedido}/ticket`);
@@ -587,6 +837,9 @@ async function verTicketCocina(idPedido) {
     }
 }
 
+/**
+ * Imprime la comanda de cocina en la impresora térmica del área de cocina.
+ */
 function imprimirTicketCocina() {
     if (!ticketActual) return;
     let printArea = document.getElementById('printable-thermal-ticket');
@@ -599,11 +852,25 @@ function imprimirTicketCocina() {
     window.print();
 }
 
+/**
+ * Cierra la ventana modal del ticket de cocina.
+ */
 function cerrarModalTicketCocina() {
     document.getElementById('modal-ticket-cocina').classList.remove('open');
 }
 
-// Vista de Factura Comercial Delivery con QR
+/**
+ * Muestra el modal de Factura Comercial de Delivery.
+ * 
+ * ¿POR QUÉ SE PUSO Y POR QUÉ SE ELIMINÓ EL CÓDIGO QR?
+ * - Despliega la información formal del pedido: número de comanda, fecha, cliente, teléfono,
+ *   dirección de entrega, repartidor asignado, desglose de platillos, costo de envío y total.
+ * - Se eliminó la generación de códigos QR de red local ya que un cliente con datos móviles
+ *   no puede resolver URLs internas como http://192.168.1.x:3000 fuera del Wi-Fi del restaurante.
+ *   Esto simplifica la factura y evita que el cliente piense que la factura está rota.
+ * 
+ * @param {number} idPedido - ID del pedido a visualizar.
+ */
 async function verFacturaDelivery(idPedido) {
     const p = pedidosDelivery.find(item => item.id_pedido === idPedido);
     if (!p) return;
@@ -637,45 +904,27 @@ async function verFacturaDelivery(idPedido) {
     const pagoLabel = p.id_metodo_pago === 1 ? 'Efectivo contra entrega' : `Transferencia ${p.banco || ''} ${p.referencia_transferencia ? '(' + p.referencia_transferencia + ')' : ''}`;
     document.getElementById('fac-del-pago-info').innerText = `Pago: ${pagoLabel}`;
 
-    // Generar código QR offline nítido que apunta directamente a la Factura Digital (idéntica al PDF)
-    const qrContainer = document.getElementById('factura-del-qr');
-    qrContainer.innerHTML = '';
-
-    let baseUrl = window.location.origin;
-    try {
-        const resInfo = await fetch('/api/server-info');
-        const sInfo = await resInfo.json();
-        if (sInfo && sInfo.baseUrl) {
-            baseUrl = sInfo.baseUrl;
-        }
-    } catch (e) {
-        // Fallback a window.location.origin
-    }
-
-    const digitalInvoiceUrl = `${baseUrl}/comprobante.html?fac=${encodeURIComponent(p.numero_pedido)}`;
-
-    if (window.QRCode) {
-        new QRCode(qrContainer, {
-            text: digitalInvoiceUrl,
-            width: 150,
-            height: 150,
-            margin: 2
-        });
-    }
-
-    const lnkProbarDel = document.getElementById('lnk-probar-qr-del');
-    if (lnkProbarDel) {
-        lnkProbarDel.href = digitalInvoiceUrl;
-    }
-
     document.getElementById('modal-factura-delivery').classList.add('open');
 }
 
+/**
+ * Lanza la impresión de la Factura Comercial de Delivery en PDF o impresora estándar.
+ */
 function imprimirFacturaDeliveryPDF() {
     window.print();
 }
 
-// Impresión de Ticket Térmico para Delivery (Impresora física 58mm / 80mm)
+/**
+ * Genera e imprime un ticket térmico de entrega portátil para el motorizado (58mm/80mm).
+ * 
+ * ¿POR QUÉ SE PUSO?
+ * El repartidor necesita llevar en mano un comprobante físico resistente y compacto con:
+ * - Teléfono del cliente para llamarlo al llegar.
+ * - Dirección exacta con referencias en Managua.
+ * - Monto exacto a cobrar en efectivo o banco al cual se transfirió.
+ * 
+ * @param {number|null} idPedido - ID del pedido a imprimir (opcional).
+ */
 async function imprimirTicketDeliveryTermico(idPedido = null) {
     let p = idPedido ? pedidosDelivery.find(item => item.id_pedido === idPedido) : pedidoFacturaActual;
     if (!p) {
@@ -692,7 +941,7 @@ async function imprimirTicketDeliveryTermico(idPedido = null) {
     const fecha = p.fecha_creacion ? new Date(p.fecha_creacion).toLocaleString('es-NI') : new Date().toLocaleString('es-NI');
 
     let ticketTexto = `================================\n`;
-    ticketTexto += `       EL GUSTAZO POS\n`;
+    ticketTexto += `          EL GUSTAZO\n`;
     ticketTexto += `  El Buen Gusto A Tu Paladar\n`;
     ticketTexto += `   Sierra Maestra, Managua\n`;
     ticketTexto += `================================\n`;
@@ -747,109 +996,37 @@ async function imprimirTicketDeliveryTermico(idPedido = null) {
     }, 1000);
 }
 
+/**
+ * Cierra la ventana modal de Factura Comercial de Delivery.
+ */
 function cerrarModalFacturaDelivery() {
     document.getElementById('modal-factura-delivery').classList.remove('open');
 }
 
-// Utilidades globales requeridas
-function obtenerUsuarioActual() {
-    try {
-        const userJson = localStorage.getItem('elgustazo_user');
-        return userJson ? JSON.parse(userJson) : null;
-    } catch (e) {
-        return null;
-    }
-}
 
-function verificarAutenticacion() {
-    const usuario = obtenerUsuarioActual();
-    if (!usuario) {
-        window.location.href = 'login.html';
-        return null;
-    }
-    return usuario;
-}
+// =============================================================================
+// SECCIÓN 6: GESTIÓN Y LIBRE ALBEDRÍO DE REPARTIDORES (CRUD & REASIGNACIÓN)
+// =============================================================================
 
-// Función global para peticiones HTTP con credenciales y rol (RBAC)
-function fetchAuth(url, options = {}) {
-    const usuario = obtenerUsuarioActual();
-    const headers = options.headers ? { ...options.headers } : {};
-    if (usuario) {
-        headers['x-user-id'] = String(usuario.id_usuario);
-        headers['x-user-role'] = String(usuario.id_rol);
-    }
-    return fetch(url, { ...options, headers });
-}
-
-function inicializarHeaderComun() {
-    const usuario = obtenerUsuarioActual();
-    if (!usuario) return;
-
-    const spanUser = document.getElementById('header-user-name');
-    const spanRol = document.getElementById('header-user-role');
-    if (spanUser) spanUser.innerText = usuario.nombre;
-    if (spanRol) spanRol.innerText = usuario.rol;
-
-    if (usuario.id_rol !== 1) {
-        document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'none');
-    }
-}
-
-function cerrarSesion() {
-    localStorage.removeItem('elgustazo_user');
-    window.location.href = 'login.html';
-}
-
-function mostrarToast(mensaje, tipo = 'success') {
-    let container = document.getElementById('toast-container');
-    if (!container) {
-        container = document.createElement('div');
-        container.id = 'toast-container';
-        container.style.position = 'fixed';
-        container.style.bottom = '20px';
-        container.style.right = '20px';
-        container.style.zIndex = '9999';
-        container.style.display = 'flex';
-        container.style.flexDirection = 'column';
-        container.style.gap = '10px';
-        document.body.appendChild(container);
-    }
-
-    const toast = document.createElement('div');
-    toast.style.padding = '12px 20px';
-    toast.style.borderRadius = '8px';
-    toast.style.fontWeight = 'bold';
-    toast.style.color = '#FFFFFF';
-    toast.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
-    toast.style.fontSize = '0.9rem';
-    toast.style.transition = 'all 0.3s';
-    toast.innerText = mensaje;
-
-    if (tipo === 'success') toast.style.background = '#16A34A';
-    else if (tipo === 'danger') toast.style.background = '#DC2626';
-    else if (tipo === 'warning') toast.style.background = '#D97706';
-    else toast.style.background = '#0284C7';
-
-    container.appendChild(toast);
-    setTimeout(() => {
-        toast.style.opacity = '0';
-        setTimeout(() => toast.remove(), 300);
-    }, 3500);
-}
-
-// =========================================================
-// GESTIÓN Y LIBRE ALBEDRÍO DE REPARTIDORES (CRUD & REASIGNACIÓN)
-// =========================================================
+/**
+ * Abre la ventana modal de gestión general de repartidores.
+ */
 function abrirModalGestionRepartidores() {
     renderizarTablaRepartidores();
     cancelarEdicionRepartidor();
     document.getElementById('modal-gestion-repartidores').classList.add('open');
 }
 
+/**
+ * Cierra el modal de gestión de repartidores.
+ */
 function cerrarModalGestionRepartidores() {
     document.getElementById('modal-gestion-repartidores').classList.remove('open');
 }
 
+/**
+ * Renderiza la lista de repartidores en la tabla modal con botones de editar y eliminar.
+ */
 function renderizarTablaRepartidores() {
     const tbody = document.getElementById('tabla-repartidores-body');
     if (!tbody) return;
@@ -861,7 +1038,7 @@ function renderizarTablaRepartidores() {
     }
 
     const usuarioActual = obtenerUsuarioActual();
-    const esAdmin = usuarioActual && usuarioActual.id_rol === 1;
+    const esAdmin = usuarioActual && (usuarioActual.id_rol === 1 || usuarioActual.id_rol === 3);
 
     repartidoresDelivery.forEach(r => {
         const tr = document.createElement('tr');
@@ -871,7 +1048,7 @@ function renderizarTablaRepartidores() {
             <td>${r.vehiculo || 'Moto'}</td>
             <td>${r.placa || '--'}</td>
             <td style="text-align:center; white-space:nowrap;">
-                <button type="button" class="btn-small" style="background:#0284C7; padding:3px 8px; font-size:0.75rem;" onclick="editarRepartidor(${r.id_repartidor})">
+                <button type="button" class="btn-small" style="background:#EA580C; padding:3px 8px; font-size:0.75rem;" onclick="editarRepartidor(${r.id_repartidor})">
                     Editar
                 </button>
                 ${esAdmin ? `
@@ -884,6 +1061,11 @@ function renderizarTablaRepartidores() {
     });
 }
 
+/**
+ * Pasa los datos de un repartidor al formulario superior para editar su teléfono, vehículo o placa.
+ * 
+ * @param {number} id - ID del repartidor.
+ */
 function editarRepartidor(id) {
     const rep = repartidoresDelivery.find(r => r.id_repartidor === id);
     if (!rep) return;
@@ -900,6 +1082,9 @@ function editarRepartidor(id) {
     document.getElementById('txt-rep-nombre').focus();
 }
 
+/**
+ * Limpia el formulario de repartidor volviendo al modo de registro nuevo.
+ */
 function cancelarEdicionRepartidor() {
     document.getElementById('txt-rep-id').value = '';
     document.getElementById('txt-rep-nombre').value = '';
@@ -912,6 +1097,11 @@ function cancelarEdicionRepartidor() {
     document.getElementById('btn-rep-cancelar-edit').style.display = 'none';
 }
 
+/**
+ * Guarda los cambios de un repartidor (nuevo o editado) en SQLite.
+ * 
+ * @param {Event} e - Evento submit del formulario.
+ */
 async function guardarRepartidor(e) {
     e.preventDefault();
     const id = document.getElementById('txt-rep-id').value;
@@ -949,6 +1139,12 @@ async function guardarRepartidor(e) {
     }
 }
 
+/**
+ * Desactiva o elimina un repartidor (Exclusivo Administrador).
+ * 
+ * @param {number} id - ID del repartidor.
+ * @param {string} nombre - Nombre del repartidor para confirmación.
+ */
 async function eliminarRepartidor(id, nombre) {
     if (!confirm(`¿Está seguro de eliminar o desactivar al repartidor "${nombre}"?`)) return;
 
@@ -957,10 +1153,6 @@ async function eliminarRepartidor(id, nombre) {
         if (!res.ok) {
             if (res.status === 403) {
                 alert('Acceso Denegado: Solo el Administrador tiene autorización para eliminar o desactivar repartidores.');
-                return;
-            }
-            if (res.status === 404) {
-                alert('El servidor aún no ha cargado la nueva ruta de eliminación en memoria. Por favor reinicia tu terminal con Ctrl+C y ejecuta nuevamente "node src/server.js", luego recarga la página.');
                 return;
             }
             const errData = await res.json().catch(() => ({ error: 'Error del servidor' }));
@@ -980,7 +1172,12 @@ async function eliminarRepartidor(id, nombre) {
     }
 }
 
-// Reasignación rápida en pedidos
+/**
+ * Abre el diálogo de reasignación rápida de repartidor para un pedido específico.
+ * 
+ * @param {number} idPedido - ID del pedido.
+ * @param {string} repartidorActual - Nombre del repartidor actual asignado.
+ */
 function abrirModalReasignarRepartidor(idPedido, repartidorActual) {
     document.getElementById('txt-reasignar-id-pedido').value = idPedido;
     const select = document.getElementById('select-nuevo-repartidor');
@@ -997,10 +1194,18 @@ function abrirModalReasignarRepartidor(idPedido, repartidorActual) {
     document.getElementById('modal-reasignar-repartidor').classList.add('open');
 }
 
+/**
+ * Cierra la ventana modal de reasignación rápida.
+ */
 function cerrarModalReasignarRepartidor() {
     document.getElementById('modal-reasignar-repartidor').classList.remove('open');
 }
 
+/**
+ * Guarda el nuevo repartidor asignado al pedido en SQLite.
+ * 
+ * @param {Event} e - Evento submit.
+ */
 async function guardarReasignacionRepartidor(e) {
     e.preventDefault();
     const idPedido = document.getElementById('txt-reasignar-id-pedido').value;
@@ -1025,11 +1230,19 @@ async function guardarReasignacionRepartidor(e) {
     }
 }
 
-// ==========================================
-// ARCHIVADO Y GESTIÓN LIMPIA DE PEDIDOS ENTREGADOS
-// ==========================================
 
-// Archivar todos los pedidos entregados con un solo clic para despejar el tablero
+// =============================================================================
+// SECCIÓN 7: ARCHIVADO LIMPIO Y GESTIÓN DE PEDIDOS ENTREGADOS
+// =============================================================================
+
+/**
+ * Archiva todos los pedidos entregados del tablero con un solo clic.
+ * 
+ * ¿POR QUÉ SE PUSO?
+ * Al final de horas pico, la columna "ENTREGADO" puede tener 20 o 30 tarjetas.
+ * Este botón limpia la pantalla para mayor comodidad del personal, manteniendo
+ * todos los pedidos guardados intactos en el historial de ventas y reportes.
+ */
 async function archivarPedidosEntregados() {
     const confirmacion = confirm('¿Desea archivar todos los pedidos entregados para despejar el tablero?\n\nLos pedidos quedarán 100% guardados en el sistema, facturación y reportes, pero ya no saturarán la pantalla.');
     if (!confirmacion) return;
@@ -1051,7 +1264,11 @@ async function archivarPedidosEntregados() {
     }
 }
 
-// Archivar pedido individual
+/**
+ * Archiva un pedido individual para sacarlo del tablero.
+ * 
+ * @param {number} idPedido - ID del pedido.
+ */
 async function archivarPedidoIndividual(idPedido) {
     try {
         const res = await fetch(`/api/delivery/pedidos/${idPedido}/archivar`, {
@@ -1071,11 +1288,16 @@ async function archivarPedidoIndividual(idPedido) {
     }
 }
 
-// Eliminar pedido permanentemente (Exclusivo Administrador)
+/**
+ * Elimina un pedido permanentemente de la base de datos (Exclusivo Administrador).
+ * 
+ * @param {number} idPedido - ID del pedido.
+ * @param {string} numeroPedido - Número visible del pedido.
+ */
 async function eliminarPedidoDelivery(idPedido, numeroPedido) {
     const usuario = typeof obtenerUsuarioActual === 'function' ? obtenerUsuarioActual() : null;
-    if (!usuario || usuario.id_rol !== 1) {
-        alert('Solo el Administrador tiene permiso para eliminar pedidos.');
+    if (!usuario || (usuario.id_rol !== 1 && usuario.id_rol !== 3)) {
+        alert('Solo el Administrador y Gerente General tienen permiso para eliminar pedidos.');
         return;
     }
 
@@ -1102,7 +1324,9 @@ async function eliminarPedidoDelivery(idPedido, numeroPedido) {
     }
 }
 
-// Modal Historial de Pedidos Delivery Archivados
+/**
+ * Abre el modal del historial de pedidos archivados.
+ */
 function abrirModalHistorialArchivados() {
     const modal = document.getElementById('modal-historial-archivados');
     if (!modal) return;
@@ -1110,11 +1334,17 @@ function abrirModalHistorialArchivados() {
     cargarPedidosArchivados();
 }
 
+/**
+ * Cierra el modal del historial de archivados.
+ */
 function cerrarModalHistorialArchivados() {
     const modal = document.getElementById('modal-historial-archivados');
     if (modal) modal.classList.remove('open');
 }
 
+/**
+ * Carga los pedidos archivados desde el backend y los renderiza en la tabla modal.
+ */
 async function cargarPedidosArchivados() {
     const tbody = document.getElementById('tabla-archivados-body');
     if (!tbody) return;
@@ -1139,8 +1369,8 @@ async function cargarPedidosArchivados() {
                 <td>${p.direccion}</td>
                 <td><strong>C$ ${parseFloat(p.total).toFixed(2)}</strong></td>
                 <td style="text-align:center; white-space:nowrap;">
-                    <button type="button" class="btn-small" style="background:#0284C7; padding:3px 8px; font-size:0.75rem;" onclick="verFacturaDelivery(${p.id_pedido})" title="Ver factura y QR del pedido">
-                        Factura & QR
+                    <button type="button" class="btn-small" style="background:#EA580C; padding:3px 8px; font-size:0.75rem;" onclick="verFacturaDelivery(${p.id_pedido})" title="Ver factura del pedido">
+                        Ver Factura
                     </button>
                     <button type="button" class="btn-small" style="background:#16A34A; padding:3px 8px; font-size:0.75rem;" onclick="desarchivarPedido(${p.id_pedido})" title="Restaurar al tablero Kanban">
                         Restaurar
@@ -1154,6 +1384,11 @@ async function cargarPedidosArchivados() {
     }
 }
 
+/**
+ * Restaura un pedido archivado devolviéndolo al tablero Kanban.
+ * 
+ * @param {number} idPedido - ID del pedido a restaurar.
+ */
 async function desarchivarPedido(idPedido) {
     try {
         const res = await fetch(`/api/delivery/pedidos/${idPedido}/archivar`, {
@@ -1174,3 +1409,323 @@ async function desarchivarPedido(idPedido) {
     }
 }
 
+
+// =============================================================================
+// SECCIÓN 8: UTILIDADES COMPARTIDAS (SESIÓN Y RBAC)
+// =============================================================================
+
+function obtenerUsuarioActual() {
+    try {
+        const userJson = localStorage.getItem('elgustazo_user');
+        return userJson ? JSON.parse(userJson) : null;
+    } catch (e) {
+        return null;
+    }
+}
+
+function verificarAutenticacion() {
+    const usuario = obtenerUsuarioActual();
+    if (!usuario) {
+        window.location.href = 'login.html';
+        return null;
+    }
+    return usuario;
+}
+
+function fetchAuth(url, options = {}) {
+    const usuario = obtenerUsuarioActual();
+    const headers = options.headers ? { ...options.headers } : {};
+    if (usuario) {
+        headers['x-user-id'] = String(usuario.id_usuario);
+        headers['x-user-role'] = String(usuario.id_rol);
+    }
+    return fetch(url, { ...options, headers });
+}
+
+function inicializarHeaderComun() {
+    const usuario = obtenerUsuarioActual();
+    if (!usuario) return;
+
+    const spanUser = document.getElementById('header-user-name');
+    const spanRol = document.getElementById('header-user-role');
+    if (spanUser) spanUser.innerText = usuario.nombre;
+    if (spanRol) spanRol.innerText = usuario.rol;
+
+    if (usuario.id_rol !== 1 && usuario.id_rol !== 3) {
+        document.querySelectorAll('.admin-only, .btn-order-delete').forEach(el => el.style.display = 'none');
+    }
+}
+
+function cerrarSesion() {
+    localStorage.removeItem('elgustazo_user');
+    window.location.href = 'login.html';
+}
+
+function mostrarToast(mensaje, tipo = 'success') {
+    let container = document.getElementById('toast-container');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'toast-container';
+        container.style.position = 'fixed';
+        container.style.bottom = '20px';
+        container.style.right = '20px';
+        container.style.zIndex = '9999';
+        container.style.display = 'flex';
+        container.style.flexDirection = 'column';
+        container.style.gap = '10px';
+        document.body.appendChild(container);
+    }
+
+    const toast = document.createElement('div');
+    toast.style.padding = '12px 20px';
+    toast.style.borderRadius = '8px';
+    toast.style.fontWeight = 'bold';
+    toast.style.color = '#FFFFFF';
+    toast.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
+    toast.style.fontSize = '0.9rem';
+    toast.style.transition = 'all 0.3s';
+    toast.innerText = mensaje;
+
+    if (tipo === 'success') toast.style.background = '#16A34A';
+    else if (tipo === 'danger') toast.style.background = '#DC2626';
+    else if (tipo === 'warning') toast.style.background = '#D97706';
+    else toast.style.background = '#0F172A';
+
+    container.appendChild(toast);
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        setTimeout(() => toast.remove(), 300);
+    }, 3500);
+}
+
+// =============================================================================
+// SECCIÓN 9: TIEMPOS DE ENTREGA, ZONAS Y MÉTRICAS
+// =============================================================================
+
+async function abrirModalTiemposEntrega() {
+    const modal = document.getElementById('modal-tiempos-entrega');
+    if (!modal) return;
+    await cargarTiemposYZonas();
+    modal.classList.add('open');
+}
+
+function cerrarModalTiemposEntrega() {
+    const modal = document.getElementById('modal-tiempos-entrega');
+    if (modal) modal.classList.remove('open');
+    cancelarEdicionZonaTiempo();
+}
+
+async function cargarTiemposYZonas() {
+    try {
+        const [resZonas, resMetricas] = await Promise.all([
+            fetch('/api/delivery/tiempos'),
+            fetch('/api/delivery/metricas-tiempos')
+        ]);
+        tiemposEntregaDelivery = await resZonas.json();
+        const metricas = await resMetricas.json();
+
+        // Actualizar KPIs
+        const elProm = document.getElementById('kpi-tiempo-promedio');
+        const elPuntual = document.getElementById('kpi-entregas-a-tiempo');
+        const elDemorados = document.getElementById('kpi-pedidos-demorados');
+        if (elProm) elProm.innerText = `${metricas.tiempo_promedio_min || 0} min`;
+        if (elPuntual) elPuntual.innerText = `${metricas.porcentaje_a_tiempo || 100}%`;
+        if (elDemorados) elDemorados.innerText = metricas.total_demorados || 0;
+
+        // Renderizar tabla
+        const tbody = document.getElementById('tabla-tiempos-entrega-body');
+        if (!tbody) return;
+        tbody.innerHTML = '';
+        if (tiemposEntregaDelivery.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:15px; color:#94A3B8;">No hay zonas configuradas.</td></tr>';
+            return;
+        }
+
+        tiemposEntregaDelivery.forEach(z => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td><strong>${z.nombre_zona}</strong></td>
+                <td style="text-align:center; font-weight:700; color:#0F172A;">${z.tiempo_estimado_min} min</td>
+                <td style="text-align:right; font-weight:700; color:#EA580C;">C$ ${parseFloat(z.costo_envio).toFixed(2)}</td>
+                <td style="color:#64748B; font-size:0.8rem;">${z.descripcion || 'Cobertura general'}</td>
+                <td style="text-align:center;">
+                    <span class="status-badge ${z.activo ? 'success' : 'danger'}">${z.activo ? 'Activo' : 'Inactivo'}</span>
+                </td>
+                <td style="text-align:center;">
+                    <div style="display:flex; gap:6px; justify-content:center;">
+                        <button type="button" class="btn-small" style="padding:3px 8px; font-size:0.75rem;" onclick="editarZonaTiempo(${z.id_tiempo_entrega})">Editar</button>
+                        <button type="button" class="btn-small" style="background:${z.activo ? '#DC2626' : '#16A34A'}; padding:3px 8px; font-size:0.75rem;" onclick="toggleEstadoZonaTiempo(${z.id_tiempo_entrega}, ${z.activo})">
+                            ${z.activo ? 'Desactivar' : 'Activar'}
+                        </button>
+                    </div>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+
+        poblarSelectsAuxiliares();
+    } catch (e) {
+        console.error('Error cargando zonas de entrega:', e);
+    }
+}
+
+async function guardarZonaTiempo(e) {
+    e.preventDefault();
+    const id = document.getElementById('txt-zte-id').value;
+    const nombre_zona = document.getElementById('txt-zte-nombre').value.trim();
+    const tiempo_estimado_min = parseInt(document.getElementById('txt-zte-minutos').value) || 25;
+    const costo_envio = parseFloat(document.getElementById('txt-zte-costo').value) || 0;
+    const descripcion = document.getElementById('txt-zte-desc').value.trim();
+
+    const url = id ? `/api/delivery/tiempos/${id}` : '/api/delivery/tiempos';
+    const method = id ? 'PUT' : 'POST';
+
+    try {
+        const res = await fetchAuth(url, {
+            method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ nombre_zona, tiempo_estimado_min, costo_envio, descripcion })
+        });
+        const data = await res.json();
+        if (data.success) {
+            mostrarToast(id ? 'Zona de entrega actualizada.' : 'Nueva zona de entrega registrada.');
+            cancelarEdicionZonaTiempo();
+            await cargarTiemposYZonas();
+        } else {
+            alert('Error: ' + data.error);
+        }
+    } catch (err) {
+        alert('Error al guardar zona de entrega.');
+    }
+}
+
+function editarZonaTiempo(id) {
+    const z = tiemposEntregaDelivery.find(item => item.id_tiempo_entrega === id);
+    if (!z) return;
+    document.getElementById('txt-zte-id').value = z.id_tiempo_entrega;
+    document.getElementById('txt-zte-nombre').value = z.nombre_zona;
+    document.getElementById('txt-zte-minutos').value = z.tiempo_estimado_min;
+    document.getElementById('txt-zte-costo').value = z.costo_envio;
+    document.getElementById('txt-zte-desc').value = z.descripcion || '';
+    document.getElementById('lbl-zte-form-title').innerText = `Editar Zona: ${z.nombre_zona}`;
+    document.getElementById('btn-zte-guardar').innerText = 'Actualizar Zona';
+    document.getElementById('btn-zte-cancelar').style.display = 'inline-block';
+}
+
+function cancelarEdicionZonaTiempo() {
+    document.getElementById('txt-zte-id').value = '';
+    document.getElementById('txt-zte-nombre').value = '';
+    document.getElementById('txt-zte-minutos').value = '25';
+    document.getElementById('txt-zte-costo').value = '30';
+    document.getElementById('txt-zte-desc').value = '';
+    document.getElementById('lbl-zte-form-title').innerText = 'Registrar Nueva Zona / Tiempo de Entrega';
+    document.getElementById('btn-zte-guardar').innerText = 'Guardar Zona';
+    document.getElementById('btn-zte-cancelar').style.display = 'none';
+}
+
+async function toggleEstadoZonaTiempo(id, estadoActual) {
+    try {
+        const nuevoEstado = estadoActual ? 0 : 1;
+        const res = await fetchAuth(`/api/delivery/tiempos/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ activo: nuevoEstado })
+        });
+        const data = await res.json();
+        if (data.success) {
+            mostrarToast(nuevoEstado ? 'Zona activada.' : 'Zona desactivada.');
+            await cargarTiemposYZonas();
+        } else {
+            alert('Error: ' + data.error);
+        }
+    } catch (e) {
+        alert('Error al actualizar estado de la zona.');
+    }
+}
+
+// =============================================================================
+// SECCIÓN 10: INTEGRACIÓN DE WHATSAPP PARA CLIENTES Y REPARTIDORES
+// =============================================================================
+
+function enviarWhatsAppClienteDelivery(idPedido) {
+    const p = pedidosDelivery.find(item => item.id_pedido === idPedido);
+    if (!p) return;
+
+    let tel = (p.telefono || '').replace(/\D/g, '');
+    if (!tel) {
+        tel = prompt('Ingrese el numero de WhatsApp del cliente (8 digitos):', '');
+        if (!tel) return;
+        tel = tel.replace(/\D/g, '');
+    }
+
+    const estadoLabels = {
+        'PENDIENTE': 'Registrado y en espera de preparacion',
+        'EN_PREPARACION': 'En proceso de elaboracion en cocina',
+        'LISTO': 'Empacado y listo para despacho',
+        'EN_CAMINO': `En ruta de entrega con el repartidor (${p.repartidor || 'Personal de Turno'})`,
+        'ENTREGADO': 'Entregado conforme a la orden'
+    };
+
+    let itemsTxt = '';
+    (p.items || []).forEach(it => {
+        itemsTxt += `  * ${it.cantidad}x ${it.producto_nombre || it.nombre}\n`;
+    });
+
+    const mensaje = 
+`================================================
+EL GUSTAZO - ESTADO DE PEDIDO DELIVERY
+Sierra Maestra, Managua
+================================================
+Estimado(a) ${p.cliente_nombre}:
+Le informamos el estado actual de su orden:
+
+Numero de Pedido: #${p.numero_pedido}
+Estado: ${estadoLabels[p.estado] || p.estado}
+Direccion de Destino: ${p.direccion}
+Total a Liquidar: C$ ${parseFloat(p.total).toFixed(2)} (${p.id_metodo_pago === 1 ? 'Efectivo contra entrega' : 'Transferencia Bancaria'})
+------------------------------------------------
+Detalle de Productos:
+${itemsTxt}------------------------------------------------
+Agradecemos su confianza en El Gustazo.
+Para consultas operativas, contactenos directamente.`;
+
+    if (typeof WhatsAppService !== 'undefined') {
+        WhatsAppService.enviarMensaje(tel, mensaje);
+    } else {
+        if (tel.length === 8) tel = '505' + tel;
+        window.open(`https://wa.me/${tel}?text=${encodeURIComponent(mensaje)}`, '_blank');
+    }
+}
+
+function enviarWhatsAppRepartidorDelivery(idPedido) {
+    const p = pedidosDelivery.find(item => item.id_pedido === idPedido);
+    if (!p) return;
+
+    const repObj = repartidoresDelivery.find(r => r.nombre === p.repartidor);
+    let tel = repObj && repObj.telefono ? repObj.telefono.replace(/\D/g, '') : '';
+    if (!tel) {
+        tel = prompt(`Ingrese el WhatsApp de ${p.repartidor || 'el repartidor'} (8 digitos):`, '');
+        if (!tel) return;
+        tel = tel.replace(/\D/g, '');
+    }
+
+    if (typeof WhatsAppService !== 'undefined') {
+        const mensaje = WhatsAppService.generarHojaRutaRepartidor(p);
+        WhatsAppService.enviarMensaje(tel, mensaje);
+    } else {
+        if (tel.length === 8) tel = '505' + tel;
+        let itemsTxt = '';
+        (p.items || []).forEach(it => {
+            itemsTxt += `  * ${it.cantidad}x ${it.producto_nombre || it.nombre}\n`;
+        });
+        const mensaje = 
+`EL GUSTAZO - HOJA DE RUTA DELIVERY
+Orden: #${p.numero_pedido}
+Cliente: ${p.cliente_nombre}
+Telefono: ${p.telefono || 'Sin telefono'}
+Direccion: ${p.direccion}
+${itemsTxt}
+Cobro: C$ ${parseFloat(p.total).toFixed(2)}`;
+        window.open(`https://wa.me/${tel}?text=${encodeURIComponent(mensaje)}`, '_blank');
+    }
+}

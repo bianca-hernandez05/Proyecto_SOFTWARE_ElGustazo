@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Caja Chica & Arqueos - El Gustazo</title>
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    <link rel="stylesheet" href="css/style.css?v=3.5">
+</head>
+<body>
+    <header class="main-header">
+        <a href="pos.html" class="logo-area">
+            <img src="img/logo.jpg" alt="Logo El Gustazo" class="brand-logo-img">
+            <div class="logo-title-wrap">
+                <h1>EL GUSTAZO</h1>
+                <p>Sierra Maestra, Managua - Control Financiero & Caja</p>
+            </div>
+        </a>
+
+        <nav class="nav-menu">
+            <a href="pos.html" class="nav-link">Menú y Facturación</a>
+            <a href="delivery.html" class="nav-link">Delivery <span id="badge-nav-delivery" class="badge-counter" style="display:none; margin-left:4px; background:#EA580C; color:#FFF; font-size:0.75rem; padding:1px 6px; border-radius:10px; font-weight:700;"></span></a>
+            <a href="inventario.html" class="nav-link">Inventario</a>
+            <a href="clientes.html" class="nav-link">Clientes</a>
+            <a href="caja.html" class="nav-link active">Caja Chica</a>
+            <a href="admin.html" class="nav-link admin-only">Administración</a>
+        </nav>
+
+        <div class="user-status">
+            <button id="btn-header-alert" class="header-alert-btn">Insumos Críticos</button>
+            <div class="user-badge">
+                <span id="header-user-name">Usuario</span>
+                <span id="header-user-role" class="role-pill">Rol</span>
+            </div>
+            <button onclick="cerrarSesion()" class="btn-logout">Salir</button>
+        </div>
+    </header>
+
+    <main class="module-container">
+        <div class="module-header-box">
+            <div>
+                <h2>Control Financiero, Caja Chica y Arqueos</h2>
+                <p>Apertura con fondo inicial, monitoreo financiero en vivo, desglose de transferencias por banco y cierre de turno.</p>
+            </div>
+            <div id="caja-status-indicator">
+                <!-- Se actualiza dinámicamente -->
+            </div>
+        </div>
+
+        <!-- SECCIÓN 1: SI LA CAJA ESTÁ CERRADA -->
+        <section id="seccion-caja-cerrada" style="display: none; max-width: 600px; margin: 30px auto;">
+            <div class="table-card" style="padding: 24px;">
+                <h3 style="color:var(--primary-orange); margin-bottom: 12px; font-size:1.2rem;">
+                    No hay ningún turno de caja abierto actualmente
+                </h3>
+                <p style="color:var(--text-secondary); margin-bottom: 20px; font-size: 0.95rem;">
+                    Para comenzar a facturar o registrar pedidos en delivery, debe ingresar el fondo inicial en efectivo asignado a la gaveta física de la caja.
+                </p>
+
+                <form onsubmit="abrirTurnoCaja(event)">
+                    <div class="form-group" style="margin-bottom: 16px;">
+                        <label for="txt-monto-apertura">Monto o Fondo Inicial en Efectivo (C$):</label>
+                        <input type="number" id="txt-monto-apertura" required placeholder="Ej: 1000.00" min="0" step="10" style="font-size:1.2rem; font-weight:800;">
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 20px;">
+                        <label for="txt-notas-apertura">Notas u Observaciones del Turno:</label>
+                        <input type="text" id="txt-notas-apertura" placeholder="Ej: Turno matutino - Cajero principal">
+                    </div>
+
+                    <button type="submit" class="btn-charge" style="width: 100%;">
+                        Abrir Turno de Caja Chica
+                    </button>
+                </form>
+            </div>
+        </section>
+
+        <!-- SECCIÓN 2: SI LA CAJA ESTÁ ABIERTA -->
+        <section id="seccion-caja-abierta" style="display: none;">
+            <!-- Tarjetas de Monitoreo Financiero -->
+            <div class="kpi-grid">
+                <div class="kpi-card orange">
+                    <span class="kpi-label">Fondo Inicial Apertura</span>
+                    <span id="kpi-fondo-inicial" class="kpi-value">C$ 0.00</span>
+                    <span id="kpi-apertura-info" class="kpi-sub">Turno activo</span>
+                </div>
+                <div class="kpi-card green">
+                    <span class="kpi-label">Ventas en Efectivo</span>
+                    <span id="kpi-ventas-efectivo" class="kpi-value">C$ 0.00</span>
+                    <span class="kpi-sub">Ingresado a gaveta física</span>
+                </div>
+                <div class="kpi-card blue">
+                    <span class="kpi-label">Total en Transferencias</span>
+                    <span id="kpi-ventas-transferencia" class="kpi-value">C$ 0.00</span>
+                    <span class="kpi-sub">Desglosado en bancos nacionales</span>
+                </div>
+                <div class="kpi-card red">
+                    <span class="kpi-label">Efectivo Físico Esperado</span>
+                    <span id="kpi-esperado-efectivo" class="kpi-value">C$ 0.00</span>
+                    <span class="kpi-sub">Fondo Inicial + Ventas Efectivo</span>
+                </div>
+            </div>
+
+            <!-- Panel de Desglose por Bancos Nacionales con Logos Oficiales -->
+            <div class="table-card" style="padding: 16px 20px; margin-bottom: 20px;">
+                <h3 style="font-size:1.05rem; color:var(--text-primary); margin-bottom: 14px;">
+                    Desglose Financiero de Transferencias por Banco (Nicaragua)
+                </h3>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px;">
+                    <div style="background:#FFF1F2; border:1.5px solid #E11D48; padding:14px; border-radius:8px; text-align:center; display:flex; flex-direction:column; align-items:center;">
+                        <img src="img/bac.png" alt="BAC Credomatic" style="height:30px; max-width:140px; object-fit:contain; margin-bottom:8px;">
+                        <h4 id="banco-monto-bac" style="font-size:1.3rem; color:#E11D48; margin:0;">C$ 0.00</h4>
+                    </div>
+                    <div style="background:#F0FDF4; border:1.5px solid #16A34A; padding:14px; border-radius:8px; text-align:center; display:flex; flex-direction:column; align-items:center;">
+                        <img src="img/banpro.png" alt="Banpro Grupo Promerica" style="height:30px; max-width:140px; object-fit:contain; margin-bottom:8px;">
+                        <h4 id="banco-monto-banpro" style="font-size:1.3rem; color:#16A34A; margin:0;">C$ 0.00</h4>
+                    </div>
+                    <div style="background:#F0FDF4; border:1.5px solid #059669; padding:14px; border-radius:8px; text-align:center; display:flex; flex-direction:column; align-items:center;">
+                        <img src="img/lafise.png" alt="Banco LAFISE" style="height:30px; max-width:140px; object-fit:contain; margin-bottom:8px;">
+                        <h4 id="banco-monto-lafise" style="font-size:1.3rem; color:#059669; margin:0;">C$ 0.00</h4>
+                    </div>
+                    <div style="background:#F0F9FF; border:1.5px solid #0284C7; padding:14px; border-radius:8px; text-align:center; display:flex; flex-direction:column; align-items:center;">
+                        <img src="img/bdf.png" alt="Banco BDF" style="height:30px; max-width:140px; object-fit:contain; margin-bottom:8px;">
+                        <h4 id="banco-monto-bdf" style="font-size:1.3rem; color:#0284C7; margin:0;">C$ 0.00</h4>
+                    </div>
+                    <div style="background:#F0F9FF; border:1.5px solid #0A2540; padding:14px; border-radius:8px; text-align:center; display:flex; flex-direction:column; align-items:center;">
+                        <img src="img/ficohsa.png" alt="Banco Ficohsa" style="height:30px; max-width:140px; object-fit:contain; margin-bottom:8px;">
+                        <h4 id="banco-monto-ficohsa" style="font-size:1.3rem; color:#0A2540; margin:0;">C$ 0.00</h4>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Formulario de Arqueo y Cierre de Turno -->
+            <div class="table-card" style="padding: 20px; border-top: 4px solid var(--primary-orange);">
+                <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:10px; margin-bottom:12px;">
+                    <div>
+                        <h3 style="font-size:1.15rem; color:var(--primary-orange); margin-bottom: 4px;">
+                            Procesar Arqueo Físico y Cierre de Turno
+                        </h3>
+                        <p style="font-size:0.85rem; color:var(--text-secondary); margin: 0;">
+                            Cuente el dinero físico en la gaveta e ingréselo para calcular la diferencia de cuadre (Exacto, Sobrante o Faltante).
+                        </p>
+                    </div>
+                    <button type="button" onclick="autocompletarEfectivoEsperado()" style="background:#FFF7ED; color:#EA580C; border:1px solid #FDBA74; border-radius:6px; padding:6px 12px; font-size:0.8rem; font-weight:800; cursor:pointer;">
+                        Autocompletar Efectivo Esperado
+                    </button>
+                </div>
+
+                <!-- Desglose Matemático en Vivo del Efectivo Esperado -->
+                <div id="resumen-formula-arqueo" style="background:#F8FAFC; border:1px solid #E2E8F0; border-radius:8px; padding:10px 14px; margin-bottom:16px; display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px; font-size:0.86rem; color:#334155;">
+                    <div>
+                        <span>Fondo Inicial: <strong id="lbl-formula-fondo">C$ 0.00</strong></span>
+                        <span style="margin:0 8px; color:#94A3B8; font-weight:800;">+</span>
+                        <span>Ventas Efectivo Netas (Sin Anuladas): <strong id="lbl-formula-ventas-efec" style="color:#16A34A;">C$ 0.00</strong></span>
+                    </div>
+                    <div style="background:#FFF7ED; border:1px solid #FDBA74; padding:4px 10px; border-radius:6px; color:#9A3412; font-weight:800;">
+                        = Efectivo Esperado en Gaveta: <span id="lbl-formula-esperado">C$ 0.00</span>
+                    </div>
+                </div>
+
+                <form onsubmit="procesarCierreArqueoCaja(event)">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+                        <div class="form-group">
+                            <label for="txt-arqueo-efectivo">Efectivo Físico Contado en Caja (C$) (*):</label>
+                            <input type="number" id="txt-arqueo-efectivo" required min="0" step="0.01" placeholder="Ingrese monto físico contado..." oninput="calcularDiferenciaArqueoEnVivo()" style="font-size:1.2rem; font-weight:800;">
+                        </div>
+
+                        <div class="form-group">
+                            <label>Diferencia de Cuadre Estimada (Contado - Esperado):</label>
+                            <div id="box-diferencia-arqueo" style="padding:10px 14px; border-radius:6px; font-weight:800; font-size:1.1rem; background:#F1F5F9; color:#475569;">
+                                Ingrese el efectivo contado
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 20px;">
+                        <label for="txt-notas-cierre">Observaciones / Justificación de Cuadre:</label>
+                        <input type="text" id="txt-notas-cierre" placeholder="Ej: Arqueo conforme con comprobantes bancarios verificados">
+                    </div>
+
+                    <button type="submit" class="btn-charge" style="background:linear-gradient(135deg, #DC2626 0%, #B91C1C 100%);">
+                        Confirmar y Cerrar Turno de Caja
+                    </button>
+                </form>
+            </div>
+        </section>
+
+        <!-- SECCIÓN 3: HISTORIAL DE ARQUEOS ANTERIORES -->
+        <div style="margin-top: 28px;">
+            <h3 style="font-size:1.1rem; color:var(--text-primary); margin-bottom: 12px;">
+                Historial de Arqueos y Cierres de Turno
+            </h3>
+            <div class="table-card">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th># Turno</th>
+                            <th>Apertura</th>
+                            <th>Cierre</th>
+                            <th>Fondo Inicial</th>
+                            <th>Ventas Efec</th>
+                            <th>Ventas Transf</th>
+                            <th>Esperado Efec</th>
+                            <th>Real Contado</th>
+                            <th>Diferencia</th>
+                            <th>Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabla-historial-cajas-body">
+                        <!-- Renderizado dinámicamente -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <script src="js/app.js"></script>
+    <script>
+        let cajaActiva = null;
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            verificarAutenticacion(false);
+            inicializarHeaderComun();
+            await consultarEstadoCaja();
+            await cargarHistorialCajas();
+        });
+
+        async function consultarEstadoCaja() {
+            try {
+                const res = await fetch('/api/caja/activa');
+                const data = await res.json();
+
+                const secCerrada = document.getElementById('seccion-caja-cerrada');
+                const secAbierta = document.getElementById('seccion-caja-abierta');
+                const indStatus = document.getElementById('caja-status-indicator');
+
+                if (data.abierta) {
+                    cajaActiva = data.caja;
+                    secCerrada.style.display = 'none';
+                    secAbierta.style.display = 'block';
+                    indStatus.innerHTML = `<span class="status-badge success" style="font-size:0.9rem; padding:6px 14px;">Turno #${cajaActiva.id_caja} ABIERTO</span>`;
+
+                    document.getElementById('kpi-fondo-inicial').innerText = formatoMoneda(cajaActiva.monto_inicial);
+                    document.getElementById('kpi-ventas-efectivo').innerText = formatoMoneda(cajaActiva.total_efectivo_ventas);
+                    document.getElementById('kpi-ventas-transferencia').innerText = formatoMoneda(cajaActiva.total_transferencias);
+                    document.getElementById('kpi-esperado-efectivo').innerText = formatoMoneda(cajaActiva.monto_esperado_efectivo);
+
+                    const lblFondo = document.getElementById('lbl-formula-fondo');
+                    const lblVentasEf = document.getElementById('lbl-formula-ventas-efec');
+                    const lblEsperado = document.getElementById('lbl-formula-esperado');
+                    if (lblFondo) lblFondo.innerText = formatoMoneda(cajaActiva.monto_inicial);
+                    if (lblVentasEf) lblVentasEf.innerText = formatoMoneda(cajaActiva.total_efectivo_ventas);
+                    if (lblEsperado) lblEsperado.innerText = formatoMoneda(cajaActiva.monto_esperado_efectivo);
+
+                    const b = cajaActiva.desglose_bancos || {};
+                    document.getElementById('banco-monto-bac').innerText = formatoMoneda(b['BAC'] || 0);
+                    document.getElementById('banco-monto-banpro').innerText = formatoMoneda(b['Banpro'] || 0);
+                    document.getElementById('banco-monto-lafise').innerText = formatoMoneda(b['Lafise'] || 0);
+                    document.getElementById('banco-monto-bdf').innerText = formatoMoneda(b['BDF'] || 0);
+                    document.getElementById('banco-monto-ficohsa').innerText = formatoMoneda(b['Ficohsa'] || 0);
+
+                    calcularDiferenciaArqueoEnVivo();
+                } else {
+                    cajaActiva = null;
+                    secCerrada.style.display = 'block';
+                    secAbierta.style.display = 'none';
+                    indStatus.innerHTML = `<span class="status-badge danger" style="font-size:0.9rem; padding:6px 14px;">Caja CERRADA</span>`;
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        async function abrirTurnoCaja(e) {
+            e.preventDefault();
+            const monto_inicial = document.getElementById('txt-monto-apertura').value;
+            const notas = document.getElementById('txt-notas-apertura').value;
+            const usuario = obtenerUsuarioActual();
+
+            try {
+                const res = await fetch('/api/caja/abrir', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        monto_inicial,
+                        id_usuario: usuario ? usuario.id_usuario : 1,
+                        notas
+                    })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    mostrarToast('Turno de caja chica abierto exitosamente.');
+                    await consultarEstadoCaja();
+                    await cargarHistorialCajas();
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            } catch (err) {
+                alert('Error al abrir turno de caja.');
+            }
+        }
+
+        function autocompletarEfectivoEsperado() {
+            if (!cajaActiva) return;
+            const input = document.getElementById('txt-arqueo-efectivo');
+            if (input) {
+                input.value = parseFloat(cajaActiva.monto_esperado_efectivo || 0).toFixed(2);
+                calcularDiferenciaArqueoEnVivo();
+            }
+        }
+
+        function calcularDiferenciaArqueoEnVivo() {
+            if (!cajaActiva) return;
+            const input = document.getElementById('txt-arqueo-efectivo');
+            const box = document.getElementById('box-diferencia-arqueo');
+            if (!input || !box) return;
+
+            const esperado = parseFloat(cajaActiva.monto_esperado_efectivo || 0);
+            const rawVal = String(input.value || '').trim();
+
+            if (rawVal === '') {
+                box.style.background = '#F1F5F9';
+                box.style.color = '#475569';
+                box.innerText = `Esperado en Gaveta: ${formatoMoneda(esperado)}`;
+                return;
+            }
+
+            const contado = parseFloat(rawVal) || 0;
+            const dif = parseFloat((contado - esperado).toFixed(2));
+
+            if (Math.abs(dif) < 0.01) {
+                box.style.background = '#DCFCE7';
+                box.style.color = '#16A34A';
+                box.innerText = `C$ 0.00 (Cuadre Exacto — Esperado: ${formatoMoneda(esperado)})`;
+            } else if (dif > 0) {
+                box.style.background = '#FEF3C7';
+                box.style.color = '#B45309';
+                box.innerText = `+${formatoMoneda(dif)} (Sobrante — Esperado: ${formatoMoneda(esperado)})`;
+            } else {
+                box.style.background = '#FEE2E2';
+                box.style.color = '#DC2626';
+                box.innerText = `-${formatoMoneda(Math.abs(dif))} (Faltante — Esperado: ${formatoMoneda(esperado)})`;
+            }
+        }
+
+        async function procesarCierreArqueoCaja(e) {
+            e.preventDefault();
+            if (!cajaActiva) return;
+
+            const efectivoContado = parseFloat(document.getElementById('txt-arqueo-efectivo').value);
+            const notas = document.getElementById('txt-notas-cierre').value;
+            const usuario = obtenerUsuarioActual();
+
+            if (isNaN(efectivoContado)) {
+                alert('Debe indicar el efectivo físico contado en la gaveta.');
+                return;
+            }
+
+            if (!confirm('¿Está seguro de cerrar el turno de caja? Se generará el arqueo final y respaldo de seguridad.')) {
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/caja/cerrar', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        id_caja: cajaActiva.id_caja,
+                        monto_real_efectivo: efectivoContado,
+                        id_usuario_cierre: usuario ? usuario.id_usuario : 1,
+                        notas
+                    })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alert(`Arqueo y Cierre Exitoso\n` +
+                          `Fondo Inicial: ${formatoMoneda(data.resumen.fondo_inicial)}\n` +
+                          `Ventas Efectivo: ${formatoMoneda(data.resumen.ventas_efectivo)}\n` +
+                          `Esperado Efectivo: ${formatoMoneda(data.resumen.monto_esperado)}\n` +
+                          `Real Contado: ${formatoMoneda(data.resumen.monto_real_contado)}\n` +
+                          `Diferencia: ${formatoMoneda(data.resumen.diferencia)} (${data.resumen.estado_arqueo})`);
+                    await consultarEstadoCaja();
+                    await cargarHistorialCajas();
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            } catch (err) {
+                alert('Error al cerrar caja.');
+            }
+        }
+
+        async function cargarHistorialCajas() {
+            try {
+                const res = await fetch('/api/caja/historial');
+                const historial = await res.json();
+                const tbody = document.getElementById('tabla-historial-cajas-body');
+                tbody.innerHTML = '';
+
+                historial.forEach(c => {
+                    const dif = c.diferencia !== null ? c.diferencia : 0;
+                    const difClass = dif === 0 ? 'success' : (dif > 0 ? 'warning' : 'danger');
+                    const difText = dif === 0 ? 'Exacto' : (dif > 0 ? `+${formatoMoneda(dif)}` : `-${formatoMoneda(Math.abs(dif))}`);
+
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td><strong>#${c.id_caja}</strong></td>
+                        <td style="font-size:0.8rem;">${c.fecha_apertura}</td>
+                        <td style="font-size:0.8rem;">${c.fecha_cierre || 'En Curso'}</td>
+                        <td>${formatoMoneda(c.monto_inicial)}</td>
+                        <td>${formatoMoneda(c.monto_efectivo)}</td>
+                        <td>${formatoMoneda(c.monto_transferencia)}</td>
+                        <td>${formatoMoneda(c.monto_esperado)}</td>
+                        <td style="font-weight:700;">${c.monto_real !== null ? formatoMoneda(c.monto_real) : '-'}</td>
+                        <td><span class="status-badge ${difClass}">${c.estado === 'ABIERTA' ? 'En Curso' : difText}</span></td>
+                        <td><span class="status-badge ${c.estado === 'ABIERTA' ? 'warning' : 'success'}">${c.estado}</span></td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            } catch (e) {
+                console.error(e);
+            }
+        }
+    </script>
+    <script src="js/rbac_nav.js"></script>
+    <script src="js/whatsapp_service.js"></script>
+    <script src="js/chatbot_bi.js"></script>
+</body>
+</html>
